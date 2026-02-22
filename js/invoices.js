@@ -529,6 +529,13 @@ function saveCompanyInvoice() {
   });
 
   showToast(`${t('toast.inv_saved')} ${invoice.id}`, 'success');
+
+  // Prompt for PDF download after short delay
+  setTimeout(() => {
+    if (confirm("¿Deseas descargar esta factura en PDF ahora?")) {
+      downloadInvoicePDF(invoice);
+    }
+  }, 800);
 }
 
 // =============================================

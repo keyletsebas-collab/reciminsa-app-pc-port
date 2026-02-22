@@ -193,13 +193,20 @@ function renderSingleInvoiceCard(inv) {
         ${inv.notes ? `<p style="margin-top:12px; font-size:0.83rem; color:var(--clr-text-secondary);">📝 ${inv.notes}</p>` : ''}
       </div>
       <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px;">
+        ${!isBasica ? `<button class="btn-secondary" onclick="handleDownloadPDF('${inv.id}')">📄 PDF</button>` : ''}
+        <button class="btn-danger" onclick="deleteInvoice('${inv.id}')">${t('hist.del_inv')}</button>
+      </div>
+    </div>
+  </div>`;
+}
+
 function handleDownloadPDF(id) {
   const inv = getAllInvoices().find(i => i.id === id);
   if (inv) downloadInvoicePDF(inv);
 }
 
 function toggleHistoryCard(id) {
-  const card = document.getElementById(`hcard - ${ id } `);
+  const card = document.getElementById(`hcard - ${id} `);
   if (card) card.classList.toggle('expanded');
 }
 
@@ -238,7 +245,7 @@ function clearHistory() {
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   const [y, m, d] = dateStr.split('-');
-  return `${ d } /${m}/${ y } `;
+  return `${d}/${m}/${y}`;
 }
 
 function formatDateTime(isoStr) {
