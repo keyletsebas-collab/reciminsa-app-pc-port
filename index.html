@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Reciminsa – Gestión de Reciclaje</title>
+  <meta name="description"
+    content="Aplicación de conteo y gestión de materiales reciclables para empresas y centros de acopio." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <link rel="stylesheet" href="css/auth.css" />
+  <link rel="stylesheet" href="css/app.css" />
+</head>
+
+<body>
+
+  <!-- ===== AUTH SCREEN ===== -->
+  <div id="auth-screen" class="auth-screen">
+    <div class="auth-bg">
+      <div class="auth-orb auth-orb--1"></div>
+      <div class="auth-orb auth-orb--2"></div>
+      <div class="auth-orb auth-orb--3"></div>
+    </div>
+    <div class="auth-card">
+      <div class="auth-brand">
+        <div class="auth-logo">
+          <svg viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="20" cy="20" r="20" fill="url(#g1)" />
+            <path d="M12 24l4-8 4 4 4-8 4 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round" />
+            <circle cx="20" cy="14" r="2" fill="#fff" opacity=".7" />
+            <defs>
+              <linearGradient id="g1" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#22c55e" />
+                <stop offset="1" stop-color="#15803d" />
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <h1 class="auth-brand-name">Reciminsa</h1>
+        <p class="auth-brand-tagline">Gestión Inteligente de Reciclaje</p>
+      </div>
+
+      <!-- Tabs -->
+      <div class="auth-tabs">
+        <button id="tab-login" class="auth-tab auth-tab--active" onclick="switchAuthTab('login')">Iniciar
+          Sesión</button>
+        <button id="tab-signup" class="auth-tab" onclick="switchAuthTab('signup')">Crear Cuenta</button>
+      </div>
+
+      <!-- Login Form -->
+      <form id="form-login" class="auth-form" onsubmit="handleLogin(event)">
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input id="login-email" type="email" class="form-input" placeholder="correo@ejemplo.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <div class="input-password-wrap">
+            <input id="login-password" type="password" class="form-input" placeholder="••••••••" required />
+            <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)">👁</button>
+          </div>
+        </div>
+        <p class="auth-error hidden" id="login-error"></p>
+        <button type="submit" class="btn-primary" id="login-btn">
+          <span>Iniciar Sesión</span>
+          <div class="btn-spinner hidden"></div>
+        </button>
+      </form>
+
+      <!-- Signup Form -->
+      <form id="form-signup" class="auth-form hidden" onsubmit="handleSignup(event)">
+        <div class="form-group">
+          <label class="form-label">Nombre completo</label>
+          <input id="signup-name" type="text" class="form-input" placeholder="Tu nombre" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Correo electrónico</label>
+          <input id="signup-email" type="email" class="form-input" placeholder="correo@ejemplo.com" required />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Contraseña</label>
+          <div class="input-password-wrap">
+            <input id="signup-password" type="password" class="form-input" placeholder="Mínimo 6 caracteres" required
+              minlength="6" />
+            <button type="button" class="password-toggle" onclick="togglePassword('signup-password', this)">👁</button>
+          </div>
+        </div>
+        <p class="auth-error hidden" id="signup-error"></p>
+        <button type="submit" class="btn-primary" id="signup-btn">
+          <span>Crear Cuenta</span>
+          <div class="btn-spinner hidden"></div>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ===== MAIN APP ===== -->
+  <div id="app-screen" class="app-screen hidden">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-logo">
+          <svg viewBox="0 0 40 40" fill="none" width="32" height="32">
+            <circle cx="20" cy="20" r="20" fill="url(#g2)" />
+            <path d="M12 24l4-8 4 4 4-8 4 8" stroke="#fff" stroke-width="2.5" stroke-linecap="round"
+              stroke-linejoin="round" />
+            <defs>
+              <linearGradient id="g2" x1="0" y1="0" x2="40" y2="40" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#22c55e" />
+                <stop offset="1" stop-color="#15803d" />
+              </linearGradient>
+            </defs>
+          </svg>
+          <span class="sidebar-brand">Reciminsa</span>
+        </div>
+        <button class="sidebar-close" id="sidebar-close" onclick="toggleSidebar()">✕</button>
+      </div>
+
+      <div class="sidebar-user">
+        <div class="sidebar-avatar" id="sidebar-avatar">R</div>
+        <div>
+          <p class="sidebar-user-name" id="sidebar-user-name">Usuario</p>
+          <p class="sidebar-user-email" id="sidebar-user-email">usuario@mail.com</p>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <a href="#" class="sidebar-link" data-page="historial" onclick="navigate('historial')">
+          <span class="sidebar-icon">📋</span>
+          <span class="sidebar-label">Historial</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="facturas" onclick="navigate('facturas')">
+          <span class="sidebar-icon">🧾</span>
+          <span class="sidebar-label">Creación de Facturas</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="codigos" onclick="navigate('codigos')">
+          <span class="sidebar-icon">🏷️</span>
+          <span class="sidebar-label">Códigos de Materiales</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="ingresos" onclick="navigate('ingresos')">
+          <span class="sidebar-icon">📈</span>
+          <span class="sidebar-label">Ingresos</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="egresos" onclick="navigate('egresos')">
+          <span class="sidebar-icon">📉</span>
+          <span class="sidebar-label">Egresos</span>
+        </a>
+        <a href="#" class="sidebar-link" data-page="ajustes" onclick="navigate('ajustes')">
+          <span class="sidebar-icon">⚙️</span>
+          <span class="sidebar-label">Ajustes</span>
+        </a>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-logout" onclick="handleLogout()">
+          <span>🚪</span> Cerrar Sesión
+        </button>
+      </div>
+    </aside>
+
+    <!-- Overlay -->
+    <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="toggleSidebar()"></div>
+
+    <!-- Main content -->
+    <main class="main-content">
+      <header class="topbar">
+        <button class="topbar-menu" id="menu-btn" onclick="toggleSidebar()">
+          <span></span><span></span><span></span>
+        </button>
+        <h2 class="topbar-title" id="topbar-title">Historial</h2>
+        <div class="topbar-date" id="topbar-date"></div>
+      </header>
+
+      <!-- Pages -->
+      <div id="page-historial" class="page hidden"></div>
+      <div id="page-facturas" class="page hidden"></div>
+      <div id="page-codigos" class="page hidden"></div>
+      <div id="page-ingresos" class="page hidden"></div>
+      <div id="page-egresos" class="page hidden"></div>
+      <div id="page-ajustes" class="page hidden"></div>
+    </main>
+  </div>
+
+  <!-- Scripts (Firebase SDKs & App Logic) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/i18n.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/materials.js"></script>
+  <script src="js/invoices.js"></script>
+  <script src="js/history.js"></script>
+  <script src="js/finance.js"></script>
+  <script src="js/settings.js"></script>
+  <script src="js/sidebar.js"></script>
+  <script src="js/app.js"></script>
+  <script src="js/sync.js"></script>
+</body>
+
+</html>
