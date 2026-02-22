@@ -193,44 +193,13 @@ function renderSingleInvoiceCard(inv) {
         ${inv.notes ? `<p style="margin-top:12px; font-size:0.83rem; color:var(--clr-text-secondary);">📝 ${inv.notes}</p>` : ''}
       </div>
       <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px;">
-        ${!isBasica ? `<button class="btn-secondary" onclick="downloadInvoicePDF('${inv.id}')">📄 PDF</button>` : ''}
-        <button class="btn-danger" onclick="deleteInvoice('${inv.id}')">${t('hist.del_inv')}</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-async function downloadInvoicePDF(id) {
-  const element = document.getElementById(`pdf-content-${id}`);
-  if (!element) return;
-
-  // Show PDF-only elements temporarily
-  const pdfHeader = element.querySelector('.pdf-only-header');
-  if (pdfHeader) pdfHeader.style.display = 'block';
-
-  // Configuration for html2pdf
-  const opt = {
-    margin: [10, 10],
-    filename: `Factura_${id}.pdf`,
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2, useCORS: true },
-    jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-  };
-
-  try {
-    showToast('Generando PDF...', 'info');
-    await html2pdf().set(opt).from(element).save();
-    showToast('PDF Descargado', 'success');
-  } catch (err) {
-    console.error('PDF Error:', err);
-    showToast('Error al generar PDF', 'error');
-  } finally {
-    if (pdfHeader) pdfHeader.style.display = 'none';
-  }
+function handleDownloadPDF(id) {
+  const inv = getAllInvoices().find(i => i.id === id);
+  if (inv) downloadInvoicePDF(inv);
 }
 
 function toggleHistoryCard(id) {
-  const card = document.getElementById(`hcard-${id}`);
+  const card = document.getElementById(`hcard - ${ id } `);
   if (card) card.classList.toggle('expanded');
 }
 
@@ -265,11 +234,11 @@ function clearHistory() {
   rerenderCurrentPage();
 }
 
-// ---- Date formatters ----
+// ---- Date formatters (Global) ----
 function formatDate(dateStr) {
   if (!dateStr) return '—';
   const [y, m, d] = dateStr.split('-');
-  return `${d}/${m}/${y}`;
+  return `${ d } /${m}/${ y } `;
 }
 
 function formatDateTime(isoStr) {
