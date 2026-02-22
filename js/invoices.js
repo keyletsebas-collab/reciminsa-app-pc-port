@@ -1,13 +1,18 @@
 /* =============================================
-   INVOICES.JS – Invoice creation (3 tabs)
-   Depends on: materials.js, i18n.js
+   INVOICES.JS – Invoice creation (Batch Entry)
+   Depends on: materials.js, i18n.js, pdf-utils.js
    ============================================= */
+
+let basicItems = []; // Still used for internal logic if needed, but the UI is now row-driven
+let compItems = [];
 
 function switchInvoiceTab(tabName) {
   document.querySelectorAll('.invoice-tab').forEach(t_ => t_.classList.remove('active'));
   document.querySelectorAll('.invoice-tab-content').forEach(c => c.classList.remove('active'));
-  document.getElementById(`inv-tab-btn-${tabName}`).classList.add('active');
-  document.getElementById(`inv-tab-${tabName}`).classList.add('active');
+  const btn = document.getElementById(`inv-tab-btn-${tabName}`);
+  const content = document.getElementById(`inv-tab-${tabName}`);
+  if (btn) btn.classList.add('active');
+  if (content) content.classList.add('active');
 }
 
 // =============================================
@@ -20,13 +25,13 @@ function renderCountTab() {
 
   const materialTotals = {};
   basicInvoices.forEach(inv => {
-    inv.items.forEach(item => {
+    (inv.items || []).forEach(item => {
       if (!materialTotals[item.matId]) {
         materialTotals[item.matId] = { name: item.name, icon: item.icon, qty: 0, peso: 0, subtotal: 0, count: 0 };
       }
       materialTotals[item.matId].qty += item.qty;
       materialTotals[item.matId].peso += (item.peso || 0);
-      materialTotals[item.matId].subtotal += item.subtotal;
+      materialTotals[item.matId].subtotal += (item.totalCompra || 0); // Lo que invertimos en comprarlo
       materialTotals[item.matId].count += 1;
     });
   });
@@ -34,13 +39,13 @@ function renderCountTab() {
   const rows = Object.entries(materialTotals).map(([id, m]) => `
     <tr>
       <td>${m.icon} ${m.name}</td>
-      <td>${m.qty.toFixed(2)} kg (en ${m.count} facturas)</td>
+      <td>${m.qty.toFixed(2)} [unidades/lb]</td>
       <td>${m.peso.toFixed(2)} kg</td>
       <td><span class="badge badge--green">${formatMoney(m.subtotal)}</span></td>
     </tr>
   `).join('');
 
-  const grandTotal = basicInvoices.reduce((sum, i) => sum + i.total, 0);
+  const grandTotal = basicInvoices.reduce((sum, i) => sum + (i.totalVenta || 0), 0);
 
   return `
     <div class="stats-grid" style="margin-bottom:24px;">
@@ -60,9 +65,9 @@ function renderCountTab() {
         <div class="stat-sub">${t('inv.for_biz')}</div>
       </div>
       <div class="stat-card">
-        <div class="stat-label">${t('inv.total_basic')}</div>
+        <div class="stat-label">Total Facturado (B)</div>
         <div class="stat-value stat-value--green">${formatMoney(grandTotal)}</div>
-        <div class="stat-sub">${t('inv.billed_mat')}</div>
+        <div class="stat-sub">Venta bruta de materiales</div>
       </div>
     </div>
 
@@ -74,9 +79,9 @@ function renderCountTab() {
           <thead>
             <tr>
               <th>${t('inv.col_mat')}</th>
-              <th>${t('inv.col_qty')}</th>
+              <th>Cant. Acumulada</th>
               <th>${t('inv.col_weight')}</th>
-              <th>${t('inv.col_val')}</th>
+              <th>Costo Compra (Inversión)</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -85,25 +90,17 @@ function renderCountTab() {
     </div>` : `
     <div class="empty-state">
       <div class="empty-state-icon">📊</div>
-      <p class="empty-state-text">${t('inv.no_basic')}<br>${t('inv.go_basic')} <b>${t('inv.tab_basic')}</b>.</p>
+      <p class="empty-state-text">${t('inv.no_basic')}<br>Crea una nueva factura en <b>${t('inv.tab_basic')}</b>.</p>
     </div>`}
   `;
 }
 
 // =============================================
-// TAB 2: FACTURAS BÁSICAS
+// TAB 2: FACTURAS BÁSICAS (Batch Entry)
 // =============================================
 
-let basicItems = [];
-
 function renderBasicForm() {
-  const mats = getMaterialCodes();
-  const matOptions = mats.map(m =>
-    `<option value="${m.id}">${m.icon} ${m.name} [${m.code}]</option>`
-  ).join('');
-
-  function renderBasicForm() {
-    return `
+  return `
     <div class="card" style="max-width: 950px; margin: 0 auto;">
       <div class="card-header">
         <h3 class="card-title">${t('inv.basic_title')}</h3>
@@ -160,18 +157,16 @@ function renderBasicForm() {
       </div>
     </div>
   `;
-  }
+}
 
-  function initBasicForm() {
-    basicItems = [];
-    const container = document.getElementById('inv-tab-basica');
-    if (container) {
-      container.innerHTML = renderBasicForm();
-      addBasicEntryRow(); // Add first empty row
-      const today = new Date().toISOString().split('T')[0];
-      const el = document.getElementById('basic-date');
-      if (el) el.value = today;
-    }
+function initBasicForm() {
+  const container = document.getElementById('inv-tab-basica');
+  if (container) {
+    container.innerHTML = renderBasicForm();
+    addBasicEntryRow();
+    const today = new Date().toISOString().split('T')[0];
+    const el = document.getElementById('basic-date');
+    if (el) el.value = today;
   }
 }
 
@@ -187,7 +182,7 @@ function addBasicEntryRow() {
   tr.id = rowId;
   tr.innerHTML = `
     <td><select class="form-select row-mat">${options}</select></td>
-    <td><input type="number" class="form-input row-qty" placeholder="0" min="0" step="0.1" oninput="calculateBatchTotals()" /></td>
+    <td><input type="number" class="form-input row-qty" placeholder="0" min="0" step="1" oninput="calculateBatchTotals()" /></td>
     <td><input type="text" class="form-input row-unit" value="lb" style="width:50px;" /></td>
     <td><input type="number" class="form-input row-peso" placeholder="0" min="0" step="0.1" oninput="calculateBatchTotals()" /></td>
     <td><input type="number" class="form-input row-pbuy" placeholder="0" min="0" step="0.1" oninput="calculateBatchTotals()" /></td>
@@ -261,6 +256,7 @@ async function saveBasicInvoiceBatch() {
 
   const totalC = items.reduce((s, i) => s + i.totalCompra, 0);
   const totalV = items.reduce((s, i) => s + i.totalVenta, 0);
+  const balanceTotal = totalV - totalC;
 
   const invoice = {
     id: `FAC-B-${Date.now()}`,
@@ -269,112 +265,19 @@ async function saveBasicInvoiceBatch() {
     items,
     totalCompra: totalC,
     totalVenta: totalV,
-    balance: totalV - totalC,
-    createdAt: new Date().toISOString()
-  };
-
-  saveInvoice(invoice);
-  showToast(`${t('toast.inv_saved')} ${invoice.id}`, 'success');
-  initBasicForm(); // Reset
-
-  // Prompt for PDF
-  setTimeout(() => {
-    if (confirm("¿Deseas descargar el PDF de esta factura?")) {
-      downloadInvoicePDF(invoice);
-    }
-  }, 800);
-}
-
-function renderBasicItems() {
-  const list = document.getElementById('basic-items-list');
-  const summary = document.getElementById('basic-summary');
-
-  if (basicItems.length === 0) { list.innerHTML = ''; summary.style.display = 'none'; return; }
-
-  list.innerHTML = basicItems.map(item => `
-    <div class="material-item">
-      <span style="font-size:1.2rem">${item.icon}</span>
-      <div style="flex:1;">
-        <div class="material-item-name">${item.name} <span class="badge" style="font-size:0.7rem;">${item.qty} ${item.unit}</span></div>
-        <div style="font-size:0.75rem; color:var(--clr-text-muted);">
-          Comp: ${formatMoney(item.priceBuy)} | Vent: ${formatMoney(item.priceSell)}
-        </div>
-      </div>
-      <div style="text-align:right;">
-        <div style="font-weight:600; font-size:0.85rem; color:#f87171;">-${formatMoney(item.totalCompra)} (C)</div>
-        <div style="font-weight:600; font-size:0.85rem; color:var(--clr-primary-light);">+${formatMoney(item.totalVenta)} (V)</div>
-      </div>
-      <div style="margin: 0 10px; padding: 4px 8px; background: var(--clr-surface-3); border-radius: 4px; text-align:center; min-width:80px;">
-        <div style="font-size:0.7rem; color:var(--clr-text-muted);">Balance</div>
-        <div style="font-weight:700; color:${item.balance >= 0 ? 'var(--clr-primary-light)' : '#f87171'}">${formatMoney(item.balance)}</div>
-      </div>
-      <button class="btn-danger" onclick="removeBasicItem(${item.id})">✕</button>
-    </div>
-  `).join('');
-
-  const totalC = basicItems.reduce((s, i) => s + i.totalCompra, 0);
-  const totalV = basicItems.reduce((s, i) => s + i.totalVenta, 0);
-  const totalB = totalV - totalC;
-
-  document.getElementById('basic-ganancia').textContent = formatMoney(totalV);
-  document.getElementById('basic-ganancia').style.color = 'var(--clr-primary-light)';
-  document.getElementById('basic-ganancia').previousElementSibling.textContent = 'Total Venta (Ingreso)';
-
-  document.getElementById('basic-perdida').textContent = formatMoney(totalC);
-  document.getElementById('basic-perdida').style.color = '#f87171';
-  document.getElementById('basic-perdida').previousElementSibling.textContent = 'Total Compra (Egreso)';
-
-  document.getElementById('basic-total').textContent = formatMoney(totalB);
-  document.getElementById('basic-total').style.color = totalB >= 0 ? 'var(--clr-primary-light)' : '#f87171';
-  document.getElementById('basic-total').previousElementSibling.textContent = 'Balance Neto';
-
-  summary.style.display = 'block';
-}
-
-function clearBasicForm() {
-  basicItems = [];
-  renderBasicItems();
-  document.getElementById('basic-client').value = '';
-  document.getElementById('basic-notes').value = '';
-}
-
-function saveBasicInvoice() {
-  if (basicItems.length === 0) { showToast(t('err.no_mat'), 'error'); return; }
-
-  const client = document.getElementById('basic-client').value.trim() || 'Cliente General';
-  const date = document.getElementById('basic-date').value || new Date().toISOString().split('T')[0];
-  const notes = document.getElementById('basic-notes').value.trim();
-
-  const totalC = basicItems.reduce((s, i) => s + i.totalCompra, 0);
-  const totalV = basicItems.reduce((s, i) => s + i.totalVenta, 0);
-  const balanceTotal = totalV - totalC;
-
-  const invoice = {
-    id: `FAC-B-${Date.now()}`,
-    type: 'basica', typeName: 'Básica',
-    client, date, notes,
-    items: [...basicItems],
-    totalCompra: totalC,
-    totalVenta: totalV,
-    total: totalV, // Mostramos el total de venta como ref principal
     balance: balanceTotal,
     createdAt: new Date().toISOString()
   };
 
   saveInvoice(invoice);
-  clearBasicForm();
 
-  // Registrar Egreso: Lo que pagamos por la compra
+  // Finance entries
   if (totalC > 0) {
     addFinanceEntry('egreso', {
       concept: `Compra: ${invoice.id} – ${client}`,
       amount: totalC, date, category: 'Materiales', ref: invoice.id
     });
   }
-
-  // Registrar Ingreso (Balance/Ganancia Bruta): 
-  // Opcional: Podrías registrar el total de venta como ingreso, 
-  // pero el usuario pidió ver el balance como ganancia bruta.
   if (balanceTotal > 0) {
     addFinanceEntry('ingreso', {
       concept: `Ganancia: ${invoice.id} – ${client}`,
@@ -383,13 +286,18 @@ function saveBasicInvoice() {
   }
 
   showToast(`${t('toast.inv_saved')} ${invoice.id}`, 'success');
+  initBasicForm();
+
+  setTimeout(() => {
+    if (confirm("¿Deseas descargar el PDF de esta factura?")) {
+      downloadInvoicePDF(invoice);
+    }
+  }, 800);
 }
 
 // =============================================
-// TAB 3: FACTURA EMPRESARIAL
+// TAB 3: FACTURAS EMPRESARIALES (Batch Entry)
 // =============================================
-
-let compItems = [];
 
 function renderCompanyForm() {
   return `
@@ -457,7 +365,7 @@ function renderCompanyForm() {
 
       <div class="form-row" style="margin-top:20px; grid-template-columns: 1fr 1fr;">
         <div class="form-group">
-          <label class="form-label">${t('inv.iva')} (%)</label>
+          <label class="form-label">ITBIS (%)</label>
           <input id="comp-tax-rate" type="number" class="form-input" value="18" oninput="calculateCompBatchTotals()" />
         </div>
         <div class="form-group">
@@ -475,7 +383,6 @@ function renderCompanyForm() {
 }
 
 function initCompanyForm() {
-  compItems = [];
   const container = document.getElementById('inv-tab-empresa');
   if (container) {
     container.innerHTML = renderCompanyForm();
@@ -580,7 +487,6 @@ async function saveCompanyInvoiceBatch() {
 
   saveInvoice(invoice);
 
-  // Register income
   addFinanceEntry('ingreso', {
     concept: `${invoice.id} – ${company}`,
     amount: total, date, category: 'Ventas Empresariales', ref: invoice.id
@@ -589,7 +495,6 @@ async function saveCompanyInvoiceBatch() {
   showToast(`${t('toast.inv_saved')} ${invoice.id}`, 'success');
   initCompanyForm();
 
-  // PDF Prompt
   setTimeout(() => {
     if (confirm("¿Deseas descargar el PDF de esta factura?")) {
       downloadInvoicePDF(invoice);
@@ -606,13 +511,11 @@ function saveInvoice(invoice) {
   invoices.unshift(invoice);
   localStorage.setItem(userKey('recim_invoices'), JSON.stringify(invoices));
 
-  // Sync to Firebase if active
   if (isFirebaseActive && db) {
     db.ref('recim_invoices').set(invoices).catch(err => console.error("Firebase invoice sync error:", err));
   }
 }
 
-// Global listener for Firebase changes (Invoices)
 if (isFirebaseActive && db) {
   db.ref('recim_invoices').on('value', (snapshot) => {
     const data = snapshot.val();
@@ -657,28 +560,19 @@ function renderInvoicesPage(container) {
     </div>
 
     <div id="inv-tab-basica" class="invoice-tab-content">
-      <!-- Will be initialized by initBasicForm -->
+      <!-- Initialized by initBasicForm -->
     </div>
 
     <div id="inv-tab-empresa" class="invoice-tab-content">
-      <!-- Will be initialized by initCompanyForm -->
+      <!-- Initialized by initCompanyForm -->
     </div>
   `;
 
   refreshCountTab();
 
   // Pre-initialize forms
-  const containerBasic = document.getElementById('inv-tab-basica');
-  if (containerBasic) containerBasic.innerHTML = renderBasicForm();
-
-  const containerEmpresa = document.getElementById('inv-tab-empresa');
-  if (containerEmpresa) containerEmpresa.innerHTML = renderCompanyForm();
-
-  // Initial rows
-  setTimeout(() => {
-    initBasicForm();
-    initCompanyForm();
-  }, 50);
+  initBasicForm();
+  initCompanyForm();
 }
 
 function refreshCountTab() {
