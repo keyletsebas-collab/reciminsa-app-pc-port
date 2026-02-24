@@ -2,50 +2,50 @@
    SETTINGS.JS – Página de Ajustes de la App
    ============================================= */
 
-const APP_VERSION = '1.0.0';
+const APP_VERSION = '3.5.0';
 
 const LANGUAGES = [
-    { code: 'es', label: '🇩🇴 Español' },
-    { code: 'en', label: '🇺🇸 English' },
-    { code: 'pt', label: '🇧🇷 Português' },
+  { code: 'es', label: '🇩🇴 Español' },
+  { code: 'en', label: '🇺🇸 English' },
+  { code: 'pt', label: '🇧🇷 Português' },
 ];
 
 const COLOR_THEMES = [
-    { id: 'green', label: 'Verde Esmeralda', primary: '#22c55e', dark: '#15803d', glow: 'rgba(34,197,94,0.12)' },
-    { id: 'blue', label: 'Azul Océano', primary: '#3b82f6', dark: '#1d4ed8', glow: 'rgba(59,130,246,0.12)' },
-    { id: 'purple', label: 'Violeta Neón', primary: '#a855f7', dark: '#7e22ce', glow: 'rgba(168,85,247,0.12)' },
-    { id: 'orange', label: 'Naranja Fuego', primary: '#f97316', dark: '#c2410c', glow: 'rgba(249,115,22,0.12)' },
-    { id: 'red', label: 'Rojo Rubí', primary: '#ef4444', dark: '#b91c1c', glow: 'rgba(239,68,68,0.12)' },
-    { id: 'teal', label: 'Turquesa', primary: '#14b8a6', dark: '#0f766e', glow: 'rgba(20,184,166,0.12)' },
+  { id: 'green', label: 'Verde Esmeralda', primary: '#22c55e', dark: '#15803d', glow: 'rgba(34,197,94,0.12)' },
+  { id: 'blue', label: 'Azul Océano', primary: '#3b82f6', dark: '#1d4ed8', glow: 'rgba(59,130,246,0.12)' },
+  { id: 'purple', label: 'Violeta Neón', primary: '#a855f7', dark: '#7e22ce', glow: 'rgba(168,85,247,0.12)' },
+  { id: 'orange', label: 'Naranja Fuego', primary: '#f97316', dark: '#c2410c', glow: 'rgba(249,115,22,0.12)' },
+  { id: 'red', label: 'Rojo Rubí', primary: '#ef4444', dark: '#b91c1c', glow: 'rgba(239,68,68,0.12)' },
+  { id: 'teal', label: 'Turquesa', primary: '#14b8a6', dark: '#0f766e', glow: 'rgba(20,184,166,0.12)' },
 ];
 
 // ---- Getters / Setters ----
 function getSettings() {
-    return JSON.parse(localStorage.getItem('recim_settings') || '{}');
+  return JSON.parse(localStorage.getItem('recim_settings') || '{}');
 }
 
 function saveSetting(key, value) {
-    const s = getSettings();
-    s[key] = value;
-    localStorage.setItem('recim_settings', JSON.stringify(s));
+  const s = getSettings();
+  s[key] = value;
+  localStorage.setItem('recim_settings', JSON.stringify(s));
 }
 
 // ---- Apply stored settings on boot ----
 function applySettings() {
-    const s = getSettings();
-    if (s.colorTheme) applyColorTheme(s.colorTheme, false);
-    if (s.darkMode === false) document.documentElement.setAttribute('data-theme', 'light');
+  const s = getSettings();
+  if (s.colorTheme) applyColorTheme(s.colorTheme, false);
+  if (s.darkMode === false) document.documentElement.setAttribute('data-theme', 'light');
 }
 
 function applyColorTheme(themeId, save = true) {
-    const theme = COLOR_THEMES.find(t_ => t_.id === themeId);
-    if (!theme) return;
-    const root = document.documentElement;
-    root.style.setProperty('--clr-primary', theme.primary);
-    root.style.setProperty('--clr-primary-dark', theme.dark);
-    root.style.setProperty('--clr-primary-light', theme.primary);
-    root.style.setProperty('--clr-primary-glow', theme.glow);
-    if (save) saveSetting('colorTheme', themeId);
+  const theme = COLOR_THEMES.find(t_ => t_.id === themeId);
+  if (!theme) return;
+  const root = document.documentElement;
+  root.style.setProperty('--clr-primary', theme.primary);
+  root.style.setProperty('--clr-primary-dark', theme.dark);
+  root.style.setProperty('--clr-primary-light', theme.primary);
+  root.style.setProperty('--clr-primary-glow', theme.glow);
+  if (save) saveSetting('colorTheme', themeId);
 }
 
 // =============================================
@@ -53,14 +53,14 @@ function applyColorTheme(themeId, save = true) {
 // =============================================
 
 function renderSettingsPage(container) {
-    const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
-    const settings = getSettings();
-    const currentLang = settings.language || 'es';
-    const currentTheme = settings.colorTheme || 'green';
-    const darkMode = settings.darkMode !== false;
-    const currentCur = settings.currency || 'usd';
+  const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+  const settings = getSettings();
+  const currentLang = settings.language || 'es';
+  const currentTheme = settings.colorTheme || 'green';
+  const darkMode = settings.darkMode !== false;
+  const currentCur = settings.currency || 'usd';
 
-    container.innerHTML = `
+  container.innerHTML = `
     <div class="page-header">
       <div>
         <h2 class="section-title">${t('set.title')}</h2>
@@ -202,6 +202,11 @@ function renderSettingsPage(container) {
             <span class="settings-item-label">${t('set.version')}</span>
             <span class="settings-item-value"><span class="badge badge--green">v${APP_VERSION}</span></span>
           </div>
+          <div class="settings-item" style="grid-column: span 2; padding-top: 0; margin-top: -8px;">
+            <p style="font-size: 0.8rem; color: var(--clr-text-muted); font-style: italic;">
+              ℹ️ ${t('set.version_msg')}
+            </p>
+          </div>
           <div class="settings-item">
             <span class="settings-item-label">${t('set.platform')}</span>
             <span class="settings-item-value">Web (PWA)</span>
@@ -226,65 +231,65 @@ function renderSettingsPage(container) {
     </div>
   `;
 
-    // Storage usage + cache breakdown
-    try {
-        let total = 0;
-        for (let k in localStorage) {
-            if (k.startsWith('recim_')) total += (localStorage[k] || '').length;
-        }
-        const el = document.getElementById('storage-info');
-        if (el) el.textContent = `${(total / 1024).toFixed(1)} KB`;
-    } catch (_) { }
+  // Storage usage + cache breakdown
+  try {
+    let total = 0;
+    for (let k in localStorage) {
+      if (k.startsWith('recim_')) total += (localStorage[k] || '').length;
+    }
+    const el = document.getElementById('storage-info');
+    if (el) el.textContent = `${(total / 1024).toFixed(1)} KB`;
+  } catch (_) { }
 
-    // Populate cache breakdown
-    setTimeout(() => renderCacheBreakdown(), 0);
+  // Populate cache breakdown
+  setTimeout(() => renderCacheBreakdown(), 0);
 }
 
 // ---- Handlers ----
 
 function handleThemeChange(themeId) {
-    applyColorTheme(themeId, true);
-    renderSettingsPage(document.getElementById('page-ajustes'));
-    showToast(t('toast.theme'), 'success');
+  applyColorTheme(themeId, true);
+  renderSettingsPage(document.getElementById('page-ajustes'));
+  showToast(t('toast.theme'), 'success');
 }
 
 function handleDarkMode(enabled) {
-    saveSetting('darkMode', enabled);
-    document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
-    showToast(enabled ? t('toast.dark') : t('toast.light'), 'success');
+  saveSetting('darkMode', enabled);
+  document.documentElement.setAttribute('data-theme', enabled ? 'dark' : 'light');
+  showToast(enabled ? t('toast.dark') : t('toast.light'), 'success');
 }
 
 function handleLangChange(code) {
-    saveSetting('language', code);
-    // Update sidebar labels immediately
-    updateSidebarLabels();
-    // Re-render current page in new language
-    rerenderCurrentPage();
-    showToast(t('toast.lang'), 'success');
+  saveSetting('language', code);
+  // Update sidebar labels immediately
+  updateSidebarLabels();
+  // Re-render current page in new language
+  rerenderCurrentPage();
+  showToast(t('toast.lang'), 'success');
 }
 
 function handleCurrencyChange(curId) {
-    saveSetting('currency', curId);
-    rerenderCurrentPage();
-    showToast(t('toast.currency'), 'success');
+  saveSetting('currency', curId);
+  rerenderCurrentPage();
+  showToast(t('toast.currency'), 'success');
 }
 
 // ---- Cache breakdown renderer ----
 function renderCacheBreakdown() {
-    const el = document.getElementById('cache-breakdown');
-    if (!el) return;
+  const el = document.getElementById('cache-breakdown');
+  if (!el) return;
 
-    const CACHE_GROUPS = [
-        { key: 'facturas',   label: '🧾 Facturas',        baseKeys: ['recim_invoices'] },
-        { key: 'finanzas',   label: '💰 Finanzas',        baseKeys: ['recim_ingresos', 'recim_egresos'] },
-        { key: 'materiales', label: '🏷️ Materiales',      baseKeys: ['recim_material_codes'] },
-        { key: 'ajustes',    label: '⚙️ Ajustes',         baseKeys: ['recim_settings'] },
-    ];
+  const CACHE_GROUPS = [
+    { key: 'facturas', label: '🧾 Facturas', baseKeys: ['recim_invoices'] },
+    { key: 'finanzas', label: '💰 Finanzas', baseKeys: ['recim_ingresos', 'recim_egresos'] },
+    { key: 'materiales', label: '🏷️ Materiales', baseKeys: ['recim_material_codes'] },
+    { key: 'ajustes', label: '⚙️ Ajustes', baseKeys: ['recim_settings'] },
+  ];
 
-    const rows = CACHE_GROUPS.map(g => {
-        const bytes = g.baseKeys.reduce((sum, k) => sum + (localStorage[userKey(k)] || '').length, 0);
-        const kb    = (bytes / 1024).toFixed(1);
-        return `
+  const rows = CACHE_GROUPS.map(g => {
+    const bytes = g.baseKeys.reduce((sum, k) => sum + (localStorage[userKey(k)] || '').length, 0);
+    const kb = (bytes / 1024).toFixed(1);
+    return `
         <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--clr-border);">
           <span style="font-size:0.86rem;font-weight:600;width:160px;flex-shrink:0;">${g.label}</span>
           <div style="flex:1;background:var(--clr-surface-3);border-radius:4px;height:8px;overflow:hidden;">
@@ -292,102 +297,102 @@ function renderCacheBreakdown() {
           </div>
           <span style="font-size:0.8rem;color:var(--clr-text-muted);width:50px;text-align:right;">${kb} KB</span>
         </div>`;
-    }).join('');
+  }).join('');
 
-    el.innerHTML = rows || '<p style="color:var(--clr-text-muted);font-size:0.85rem;">Sin datos almacenados.</p>';
+  el.innerHTML = rows || '<p style="color:var(--clr-text-muted);font-size:0.85rem;">Sin datos almacenados.</p>';
 }
 
 function handleClearCache(category) {
-    const CACHE_MAP = {
-        facturas:   { baseKeys: ['recim_invoices'],                                label: 'facturas' },
-        finanzas:   { baseKeys: ['recim_ingresos', 'recim_egresos'],               label: 'ingresos y egresos' },
-        materiales: { baseKeys: ['recim_material_codes'],                          label: 'materiales' },
-        todo:       { baseKeys: ['recim_invoices', 'recim_ingresos', 'recim_egresos', 'recim_material_codes'], label: 'todos los datos' },
-    };
-    const group = CACHE_MAP[category];
-    if (!group) return;
-    if (!confirm(`¿Eliminar ${group.label}? Esta acción no se puede deshacer.`)) return;
-    group.baseKeys.forEach(k => localStorage.removeItem(userKey(k)));
-    showToast('🗑 Datos eliminados', 'success');
-    renderSettingsPage(document.getElementById('page-ajustes'));
+  const CACHE_MAP = {
+    facturas: { baseKeys: ['recim_invoices'], label: 'facturas' },
+    finanzas: { baseKeys: ['recim_ingresos', 'recim_egresos'], label: 'ingresos y egresos' },
+    materiales: { baseKeys: ['recim_material_codes'], label: 'materiales' },
+    todo: { baseKeys: ['recim_invoices', 'recim_ingresos', 'recim_egresos', 'recim_material_codes'], label: 'todos los datos' },
+  };
+  const group = CACHE_MAP[category];
+  if (!group) return;
+  if (!confirm(`¿Eliminar ${group.label}? Esta acción no se puede deshacer.`)) return;
+  group.baseKeys.forEach(k => localStorage.removeItem(userKey(k)));
+  showToast('🗑 Datos eliminados', 'success');
+  renderSettingsPage(document.getElementById('page-ajustes'));
 }
 
 function handleClearData() {
-    handleClearCache('todo');
+  handleClearCache('todo');
 }
 
 // ---- Update sidebar nav labels on language change ----
 function updateSidebarLabels() {
-    const labels = {
-        historial: t('nav.historial'),
-        facturas: t('nav.facturas'),
-        codigos: t('nav.codigos'),
-        ingresos: t('nav.ingresos'),
-        egresos: t('nav.egresos'),
-        ajustes: t('nav.ajustes'),
-    };
-    document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
-        const page = link.getAttribute('data-page');
-        const labelEl = link.querySelector('.sidebar-label');
-        if (labelEl && labels[page]) labelEl.textContent = labels[page];
-    });
-    // Update topbar title
-    const topTitle = document.getElementById('topbar-title');
-    const curPage = document.querySelector('.sidebar-link.active')?.getAttribute('data-page');
-    if (topTitle && curPage) {
-        const pageKey = `page.${curPage}`;
-        topTitle.textContent = t(pageKey);
-    }
+  const labels = {
+    historial: t('nav.historial'),
+    facturas: t('nav.facturas'),
+    codigos: t('nav.codigos'),
+    ingresos: t('nav.ingresos'),
+    egresos: t('nav.egresos'),
+    ajustes: t('nav.ajustes'),
+  };
+  document.querySelectorAll('.sidebar-link[data-page]').forEach(link => {
+    const page = link.getAttribute('data-page');
+    const labelEl = link.querySelector('.sidebar-label');
+    if (labelEl && labels[page]) labelEl.textContent = labels[page];
+  });
+  // Update topbar title
+  const topTitle = document.getElementById('topbar-title');
+  const curPage = document.querySelector('.sidebar-link.active')?.getAttribute('data-page');
+  if (topTitle && curPage) {
+    const pageKey = `page.${curPage}`;
+    topTitle.textContent = t(pageKey);
+  }
 }
 // ---- Inline account name editor ----
 function showNameEditor() {
-    const editor = document.getElementById('settings-name-editor');
-    if (editor) {
-        editor.style.display = 'block';
-        document.getElementById('settings-name-input')?.select();
-    }
+  const editor = document.getElementById('settings-name-editor');
+  if (editor) {
+    editor.style.display = 'block';
+    document.getElementById('settings-name-input')?.select();
+  }
 }
 
 function hideNameEditor() {
-    const editor = document.getElementById('settings-name-editor');
-    if (editor) editor.style.display = 'none';
+  const editor = document.getElementById('settings-name-editor');
+  if (editor) editor.style.display = 'none';
 }
 
 function saveAccountName() {
-    const input = document.getElementById('settings-name-input');
-    const newName = input?.value.trim();
-    if (!newName) {
-        if (input) input.style.borderColor = '#ef4444';
-        return;
-    }
+  const input = document.getElementById('settings-name-input');
+  const newName = input?.value.trim();
+  if (!newName) {
+    if (input) input.style.borderColor = '#ef4444';
+    return;
+  }
 
-    // Update session
-    const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
-    session.name = newName;
-    session.avatar = newName[0].toUpperCase();
-    localStorage.setItem('recim_session', JSON.stringify(session));
+  // Update session
+  const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+  session.name = newName;
+  session.avatar = newName[0].toUpperCase();
+  localStorage.setItem('recim_session', JSON.stringify(session));
 
-    // Update the stored user record so the name persists on next login
-    const users = JSON.parse(localStorage.getItem('recim_users') || '[]');
-    const idx = users.findIndex(u => u.accountId === session.accountId);
-    if (idx !== -1) {
-        users[idx].name = newName;
-        users[idx].avatar = newName[0].toUpperCase();
-        localStorage.setItem('recim_users', JSON.stringify(users));
-    }
+  // Update the stored user record so the name persists on next login
+  const users = JSON.parse(localStorage.getItem('recim_users') || '[]');
+  const idx = users.findIndex(u => u.accountId === session.accountId);
+  if (idx !== -1) {
+    users[idx].name = newName;
+    users[idx].avatar = newName[0].toUpperCase();
+    localStorage.setItem('recim_users', JSON.stringify(users));
+  }
 
-    // Update the UI immediately (no full re-render needed)
-    const nameEl = document.getElementById('settings-display-name');
-    const avatarEl = document.getElementById('settings-avatar-el');
-    if (nameEl) nameEl.textContent = newName;
-    if (avatarEl) avatarEl.textContent = newName[0].toUpperCase();
+  // Update the UI immediately (no full re-render needed)
+  const nameEl = document.getElementById('settings-display-name');
+  const avatarEl = document.getElementById('settings-avatar-el');
+  if (nameEl) nameEl.textContent = newName;
+  if (avatarEl) avatarEl.textContent = newName[0].toUpperCase();
 
-    // Update sidebar
-    const sidebarName = document.getElementById('sidebar-user-name');
-    const sidebarAvatar = document.getElementById('sidebar-avatar');
-    if (sidebarName) sidebarName.textContent = newName;
-    if (sidebarAvatar) sidebarAvatar.textContent = newName[0].toUpperCase();
+  // Update sidebar
+  const sidebarName = document.getElementById('sidebar-user-name');
+  const sidebarAvatar = document.getElementById('sidebar-avatar');
+  if (sidebarName) sidebarName.textContent = newName;
+  if (sidebarAvatar) sidebarAvatar.textContent = newName[0].toUpperCase();
 
-    hideNameEditor();
-    showToast('✅ Nombre actualizado', 'success');
+  hideNameEditor();
+  showToast('✅ Nombre actualizado', 'success');
 }
