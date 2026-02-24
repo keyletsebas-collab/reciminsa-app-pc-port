@@ -1,6 +1,6 @@
 /* =============================================
    INVOICES.JS – Invoice creation (Batch Entry)
-   Depends on: materials.js, i18n.js, pdf-utils.js
+   Depends on: materials.js, i18n.js, excel-utils.js
    ============================================= */
 
 let basicItems = []; // Still used for internal logic if needed, but the UI is now row-driven
@@ -289,8 +289,8 @@ async function saveBasicInvoiceBatch() {
   initBasicForm();
 
   setTimeout(() => {
-    if (confirm("¿Deseas descargar el PDF de esta factura?")) {
-      downloadInvoicePDF(invoice);
+    if (confirm("¿Deseas descargar el Excel de este registro?")) {
+      exportarExcelResiduos(invoice);
     }
   }, 800);
 }
@@ -496,8 +496,8 @@ async function saveCompanyInvoiceBatch() {
   initCompanyForm();
 
   setTimeout(() => {
-    if (confirm("¿Deseas descargar el PDF de esta factura?")) {
-      downloadInvoicePDF(invoice);
+    if (confirm("¿Deseas descargar el Excel de este registro?")) {
+      exportarExcelResiduos(invoice);
     }
   }, 800);
 }
