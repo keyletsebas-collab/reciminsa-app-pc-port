@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reciminsa-v4';
+const CACHE_NAME = 'reciminsa-v5';
 const ASSETS = [
   './',
   './index.html',

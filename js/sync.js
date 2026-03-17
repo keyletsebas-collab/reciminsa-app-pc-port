@@ -17,6 +17,8 @@
     const SETTINGS_KEY = 'recim_settings';
     const USERS_KEY = 'recim_users';
 
+    console.log("🔄 Sync Module v1.1 Active: Cloud deletions support enabled.");
+
     /**
      * Returns the current logged-in user's accountId, or null if not logged in.
      */
