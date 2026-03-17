@@ -584,6 +584,11 @@
     .invoice-tab-icon {
         display: none;
     }
+
+    /* Restrict navigation on mobile: only creation of invoices */
+    .sidebar-link:not([data-page="facturas"]) {
+        display: none;
+    }
 }
 
 /* =============================================

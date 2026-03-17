@@ -17,8 +17,12 @@ function toggleSidebar() {
 }
 
 // Close sidebar on wide screens (no mobile)
+function isMobile() {
+    return window.innerWidth <= 768;
+}
+
 function closeSidebarIfMobile() {
-    if (window.innerWidth <= 768) {
+    if (isMobile()) {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebar-overlay');
         sidebar.classList.remove('open');

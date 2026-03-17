@@ -31,6 +31,15 @@ const PAGE_TITLE_KEYS = {
 
 // ---- Current page tracker (used by sync.js) ----
 let _currentPage = null;
+// ---- PWA Install Prompt ----
+let deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    // Notify settings page if it's currently rendered
+    if (_currentPage === 'ajustes') rerenderCurrentPage();
+});
+
 function getCurrentPage() { return _currentPage; }
 function setCurrentPage(pageName) { _currentPage = pageName; }
 
@@ -109,9 +118,10 @@ function initApp(user) {
     document.getElementById('sidebar-avatar').textContent = (user.avatar || (user.name || 'U')[0]).toUpperCase();
 
     setTopbarDate();
-
-    // Default page
-    navigate('historial');
+    
+    // Default page (Restricted to invoices on mobile)
+    const defaultPage = isMobile() ? 'facturas' : 'historial';
+    navigate(defaultPage);
 }
 
 // ---- Restore session on load ----

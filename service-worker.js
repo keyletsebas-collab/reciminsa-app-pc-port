@@ -1,19 +1,26 @@
-const CACHE_NAME = 'reciminsa-v3';
+const CACHE_NAME = 'reciminsa-v4';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/css/index.css',
-  '/js/app.js',
-  '/js/auth.js',
-  '/js/sync.js',
-  '/js/i18n.js',
-  '/js/materials.js',
-  '/js/invoices.js',
-  '/js/finance.js',
-  '/js/settings.js',
-  '/js/firebase-config.js',
-  '/js/excel-utils.js',
-  '/manifest.json'
+  './',
+  './index.html',
+  './css/main.css',
+  './css/auth.css',
+  './css/app.css',
+  './css/index.css',
+  './js/app.js',
+  './js/auth.js',
+  './js/sync.js',
+  './js/i18n.js',
+  './js/materials.js',
+  './js/invoices.js',
+  './js/history.js',
+  './js/finance.js',
+  './js/settings.js',
+  './js/sidebar.js',
+  './js/firebase-config.js',
+  './js/excel-utils.js',
+  './manifest.json',
+  './icon-192.png',
+  './icon-512.png'
 ];
 
 self.addEventListener('install', event => {

@@ -221,7 +221,15 @@ function renderSettingsPage(container) {
           </div>
         </div>
 
-        <div style="margin-top:16px;">
+        <div style="margin-top:20px; display:flex; flex-direction:column; gap:12px;">
+          ${deferredPrompt ? `
+            <div style="padding: 12px; background: var(--clr-primary-glow); border: 1px dashed var(--clr-primary); border-radius: var(--r-md); margin-bottom: 4px;">
+              <p style="font-size:0.82rem; color:var(--clr-text-secondary); margin-bottom:8px;">${t('set.install_desc')}</p>
+              <button class="btn-primary" style="width:100%;justify-content:center;background:linear-gradient(135deg, var(--clr-primary), var(--clr-primary-dark));box-shadow:0 4px 15px var(--clr-primary-glow);" onclick="handleInstallApp()">
+                ${t('set.install_btn')}
+              </button>
+            </div>
+          ` : ''}
           <button class="btn-danger" style="width:100%;justify-content:center;" onclick="handleClearData()">
             ${t('set.clear_data')}
           </button>
@@ -395,4 +403,14 @@ function saveAccountName() {
 
   hideNameEditor();
   showToast('✅ Nombre actualizado', 'success');
+}
+
+async function handleInstallApp() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  if (outcome === 'accepted') {
+    deferredPrompt = null;
+    rerenderCurrentPage();
+  }
 }
