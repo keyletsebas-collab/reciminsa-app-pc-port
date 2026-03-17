@@ -120,15 +120,24 @@
         if (!accountId) return;
 
         const dataToSync = {};
+        let hasData = false;
         WATCHED_KEYS.forEach(k => {
             const val = localStorage.getItem(k.pattern);
-            if (val) dataToSync[k.pattern] = JSON.parse(val);
+            if (val) {
+                dataToSync[k.pattern] = JSON.parse(val);
+                hasData = true;
+            }
         });
 
         try {
-            await db.ref(`data/${accountId}`).set(dataToSync);
+            // Use null if no data to ensure the cloud path is cleared
+            const finalData = hasData ? dataToSync : null;
+            await db.ref(`data/${accountId}`).set(finalData);
+            console.log(`☁️ Firebase Push: ${hasData ? 'Datos actualizados' : 'Nube limpiada (vacío)'}`);
+            return true;
         } catch (err) {
             console.error('Firebase Sync Push Error:', err);
+            return false;
         }
     }
 
@@ -145,21 +154,38 @@
 
         try {
             const snapshot = await db.ref(`data/${accountId}`).get();
-            const remoteData = snapshot.val();
+            const remoteData = snapshot.val() || {}; // Fallback to empty object
 
-            if (remoteData) {
-                let changed = false;
-                for (const key in remoteData) {
-                    const localVal = localStorage.getItem(key);
-                    const remoteVal = JSON.stringify(remoteData[key]);
-                    if (localVal !== remoteVal) {
-                        localStorage.setItem(key, remoteVal);
+            let changed = false;
+
+            // 1. Update or clear local data based on remote state
+            WATCHED_KEYS.forEach(k => {
+                const remoteVal = remoteData[k.pattern];
+                const localVal = localStorage.getItem(k.pattern);
+                
+                if (remoteVal === undefined) {
+                    // Missing in cloud = should be missing in local
+                    if (localVal !== null) {
+                        localStorage.removeItem(k.pattern);
                         changed = true;
+                        console.log(`☁️ Firebase Pull: Eliminando ${k.label} localmente (Sincronizado)`);
+                    }
+                } else {
+                    // Exists in cloud = update local if different
+                    const remoteStr = JSON.stringify(remoteVal);
+                    if (localVal !== remoteStr) {
+                        localStorage.setItem(k.pattern, remoteStr);
+                        changed = true;
+                        console.log(`☁️ Firebase Pull: Actualizando ${k.label} (Datos remotos)`);
                     }
                 }
-                if (changed) {
-                    try { rerenderCurrentPage(); } catch (_) { }
-                }
+            });
+
+            if (changed) {
+                console.log('☁️ Firebase Pull: Cambios aplicados, renderizando...');
+                try { rerenderCurrentPage(); } catch (_) { }
+            } else {
+                console.log('☁️ Firebase Pull: Local sincronizado con nube (sin cambios)');
             }
         } catch (err) {
             console.error('Firebase Pull Error:', err);
