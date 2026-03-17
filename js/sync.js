@@ -166,9 +166,32 @@
         }
     }
 
+    // Debounce timer for pushing data
+    let syncPushTimeout = null;
+
+    /**
+     * Debounced version of syncPushData to avoid race conditions
+     * when multiple changes happen rapidly (like clearing all data).
+     */
+    function debouncedSyncPush() {
+        if (syncPushTimeout) clearTimeout(syncPushTimeout);
+        syncPushTimeout = setTimeout(() => {
+            syncPushData();
+        }, 800);
+    }
+
+    /**
+     * Force an immediate sync and return a promise.
+     */
+    async function forceSync() {
+        if (syncPushTimeout) clearTimeout(syncPushTimeout);
+        return await syncPushData();
+    }
+
     // Export to window
     window.syncPushData = syncPushData;
     window.syncPullData = syncPullData;
+    window.forceSync = forceSync;
 
     // ---- Main storage event listener ----
     window.addEventListener('storage', function (event) {
@@ -207,7 +230,20 @@
         if (isFirebaseActive && key.startsWith('recim_')) {
             const isWatched = WATCHED_KEYS.some(wk => wk.pattern === key);
             if (isWatched) {
-                syncPushData();
+                debouncedSyncPush();
+            }
+        }
+    };
+
+    const originalRemoveItem = localStorage.removeItem;
+    localStorage.removeItem = function (key) {
+        originalRemoveItem.apply(this, arguments);
+
+        // If a watched key is removed, sync the empty state to cloud
+        if (isFirebaseActive && key.startsWith('recim_')) {
+            const isWatched = WATCHED_KEYS.some(wk => wk.pattern === key);
+            if (isWatched) {
+                debouncedSyncPush();
             }
         }
     };

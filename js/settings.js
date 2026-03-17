@@ -310,7 +310,7 @@ function renderCacheBreakdown() {
   el.innerHTML = rows || '<p style="color:var(--clr-text-muted);font-size:0.85rem;">Sin datos almacenados.</p>';
 }
 
-function handleClearCache(category) {
+async function handleClearCache(category) {
   const CACHE_MAP = {
     facturas: { baseKeys: ['recim_invoices'], label: 'facturas' },
     finanzas: { baseKeys: ['recim_ingresos', 'recim_egresos'], label: 'ingresos y egresos' },
@@ -320,8 +320,15 @@ function handleClearCache(category) {
   const group = CACHE_MAP[category];
   if (!group) return;
   if (!confirm(`¿Eliminar ${group.label}? Esta acción no se puede deshacer.`)) return;
+  
   group.baseKeys.forEach(k => localStorage.removeItem(userKey(k)));
-  showToast('🗑 Datos eliminados', 'success');
+  
+  // Force cloud sync immediately so data doesn't return on refresh
+  if (window.forceSync) {
+    await window.forceSync();
+  }
+  
+  showToast('🗑 Datos eliminados de local y nube', 'success');
   renderSettingsPage(document.getElementById('page-ajustes'));
 }
 
