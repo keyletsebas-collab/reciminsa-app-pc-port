@@ -14,26 +14,12 @@ function addFinanceEntry(type, entry) {
     createdAt: new Date().toISOString()
   };
   list.unshift(newEntry);
+  // localStorage override in sync.js automatically pushes to Firebase
   localStorage.setItem(userKey(baseKey), JSON.stringify(list));
-
-  // Sync to Firebase if active
-  if (isFirebaseActive && db) {
-    db.ref(baseKey).set(list).catch(err => console.error("Firebase finance sync error:", err));
-  }
 }
 
-// Global listeners for Firebase changes (Finance)
-if (isFirebaseActive && db) {
-  ['recim_ingresos', 'recim_egresos'].forEach(baseKey => {
-    db.ref(baseKey).on('value', (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        localStorage.setItem(userKey(baseKey), JSON.stringify(data));
-        if (typeof rerenderCurrentPage === 'function') rerenderCurrentPage();
-      }
-    });
-  });
-}
+// NOTE: Firebase sync is handled centrally by sync.js (syncPushData / syncPullData).
+// Do NOT add on('value') listeners here — they bypass delete logic and restore deleted data.
 
 // ---- Category breakdown renderer ----
 function renderCategoryBreakdown(entries, isIncome) {
@@ -265,13 +251,8 @@ function renderFinanceList(entries, type) {
 function deleteFinanceEntry(type, id) {
   const baseKey = type === 'ingreso' ? 'recim_ingresos' : 'recim_egresos';
   const list = JSON.parse(localStorage.getItem(userKey(baseKey)) || '[]').filter(e => e.id !== id);
+  // localStorage override in sync.js automatically pushes deletion to Firebase
   localStorage.setItem(userKey(baseKey), JSON.stringify(list));
-
-  // Sync to Firebase if active
-  if (isFirebaseActive && db) {
-    db.ref(baseKey).set(list).catch(err => console.error("Firebase finance delete sync error:", err));
-  }
-
   showToast(t('toast.del_entry'), 'success');
   rerenderCurrentPage();
 }

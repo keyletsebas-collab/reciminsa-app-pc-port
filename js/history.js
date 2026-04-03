@@ -206,7 +206,7 @@ function handleDownloadPDF(id) {
 }
 
 function toggleHistoryCard(id) {
-  const card = document.getElementById(`hcard - ${id} `);
+  const card = document.getElementById(`hcard-${id}`);
   if (card) card.classList.toggle('expanded');
 }
 
@@ -229,6 +229,7 @@ function filterHistory() {
 function deleteInvoice(id) {
   if (!confirm(t('confirm.del_inv'))) return;
   const invoices = getAllInvoices().filter(i => i.id !== id);
+  // Use setItem (not removeItem) so the sync.js localStorage override fires and pushes to Firebase
   localStorage.setItem(userKey('recim_invoices'), JSON.stringify(invoices));
   showToast(t('toast.del_inv'), 'success');
   rerenderCurrentPage();
@@ -236,7 +237,10 @@ function deleteInvoice(id) {
 
 function clearHistory() {
   if (!confirm(t('confirm.clear_hist'))) return;
-  localStorage.removeItem(userKey('recim_invoices'));
+  // Write empty array so sync.js can detect the change and push null to Firebase
+  localStorage.setItem(userKey('recim_invoices'), JSON.stringify([]));
+  // Also force an immediate sync to ensure cloud is cleared
+  if (typeof forceSync === 'function') forceSync();
   showToast(t('toast.clear_hist'), 'success');
   rerenderCurrentPage();
 }

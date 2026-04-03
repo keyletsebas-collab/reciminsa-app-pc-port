@@ -521,22 +521,12 @@ async function saveCompanyInvoiceBatch() {
 function saveInvoice(invoice) {
   const invoices = getAllInvoices();
   invoices.unshift(invoice);
+  // localStorage override in sync.js automatically pushes to Firebase
   localStorage.setItem(userKey('recim_invoices'), JSON.stringify(invoices));
-
-  if (isFirebaseActive && db) {
-    db.ref('recim_invoices').set(invoices).catch(err => console.error("Firebase invoice sync error:", err));
-  }
 }
 
-if (isFirebaseActive && db) {
-  db.ref('recim_invoices').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      localStorage.setItem(userKey('recim_invoices'), JSON.stringify(data));
-      if (typeof rerenderCurrentPage === 'function') rerenderCurrentPage();
-    }
-  });
-}
+// NOTE: Firebase sync is handled centrally by sync.js (syncPushData / syncPullData).
+// Do NOT add on('value') listeners here — they bypass delete logic and restore deleted data.
 
 function getAllInvoices() {
   return JSON.parse(localStorage.getItem(userKey('recim_invoices')) || '[]');

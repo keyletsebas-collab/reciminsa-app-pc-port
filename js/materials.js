@@ -19,25 +19,12 @@ function getCustomCodes() {
 }
 
 function saveCustomCodes(codes) {
+  // localStorage override in sync.js automatically pushes to Firebase
   localStorage.setItem(userKey('recim_material_codes'), JSON.stringify(codes));
-
-  // Sync to Firebase if active
-  if (isFirebaseActive && db) {
-    db.ref('materials').set(codes).catch(err => console.error("Firebase sync error:", err));
-  }
 }
 
-// Global listener for Firebase changes
-if (isFirebaseActive && db) {
-  db.ref('materials').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (data) {
-      localStorage.setItem(userKey('recim_material_codes'), JSON.stringify(data));
-      // Trigger UI update if we are on the codes page
-      if (typeof rerenderCurrentPage === 'function') rerenderCurrentPage();
-    }
-  });
-}
+// NOTE: Firebase sync is handled centrally by sync.js (syncPushData / syncPullData).
+// Do NOT add on('value') listeners here — they bypass delete logic and restore deleted data.
 
 function getMaterialCodes() {
   const custom = getCustomCodes();
