@@ -585,8 +585,8 @@
         display: none;
     }
 
-    /* Restrict navigation on mobile: only creation of invoices */
-    .sidebar-link:not([data-page="facturas"]) {
+    /* Restrict navigation on mobile: only Ingresos and Egresos */
+    .sidebar-link:not([data-page="ingresos"]):not([data-page="egresos"]) {
         display: none;
     }
 }

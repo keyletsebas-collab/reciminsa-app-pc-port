@@ -119,8 +119,8 @@ function initApp(user) {
 
     setTopbarDate();
     
-    // Default page (Restricted to invoices on mobile)
-    const defaultPage = isMobile() ? 'facturas' : 'historial';
+    // Default page (Restricted to Ingresos/Egresos on mobile)
+    const defaultPage = isMobile() ? 'ingresos' : 'historial';
     navigate(defaultPage);
 }
 
