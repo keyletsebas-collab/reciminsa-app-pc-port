@@ -2,7 +2,7 @@
    SETTINGS.JS – Página de Ajustes de la App
    ============================================= */
 
-const APP_VERSION = 'beta 1.0.2';
+const APP_VERSION = 'alpha 10.1';
 
 const LANGUAGES = [
   { code: 'es', label: '🇩🇴 Español' },
@@ -220,7 +220,7 @@ function renderSettingsPage(container) {
           </div>
           <div class="settings-item">
             <span class="settings-item-label">${t('set.version')}</span>
-            <span class="settings-item-value"><span class="badge badge--green">v${APP_VERSION}</span></span>
+            <span class="settings-item-value"><span style="background: linear-gradient(90deg, #ff007f, #7928ca, #ff007f); background-size: 200% auto; color: white; font-weight: 800; padding: 4px 10px; border-radius: 8px; animation: textShine 3s linear infinite;">🚀 ALPHA 10.1</span></span>
           </div>
           <div class="settings-item" style="grid-column: span 2; padding-top: 0; margin-top: -8px;">
             <p style="font-size: 0.8rem; color: var(--clr-text-muted); font-style: italic;">

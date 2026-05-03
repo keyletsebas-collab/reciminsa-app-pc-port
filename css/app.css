@@ -933,3 +933,4 @@
     padding-bottom: 8px;
     border-bottom: 1px solid var(--clr-border);
 }
+@keyframes textShine { to { background-position: 200% center; } }
