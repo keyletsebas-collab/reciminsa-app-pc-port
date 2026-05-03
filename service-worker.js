@@ -1,4 +1,4 @@
-const CACHE_NAME = 'reciminsa-v5';
+const CACHE_NAME = 'reciminsa-v6';
 const ASSETS = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const ASSETS = [
   './js/sync.js',
   './js/i18n.js',
   './js/materials.js',
+  './js/bitacoras.js',
   './js/invoices.js',
   './js/history.js',
   './js/finance.js',
