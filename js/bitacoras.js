@@ -182,18 +182,18 @@ function addBasicEntryRow() {
       </div>
     </div>
     
-    <div class="form-row" style="grid-template-columns: ${isMobile ? '1fr 1fr' : '1fr 1fr 1fr'}; margin-bottom:10px;">
+    <div class="form-row" style="grid-template-columns: 1fr 1fr; margin-bottom:10px;">
       <div class="form-group" style="margin-bottom:0;">
-        <label class="form-label" style="font-size:12px;">Cantidad</label>
-        <input type="number" class="form-input row-qty" placeholder="0" min="0" step="1" oninput="calculateBatchTotals()" />
+        <label class="form-label" style="font-size:12px;">Cantidad / Peso</label>
+        <input type="number" class="form-input row-qty" placeholder="0" min="0" step="0.01" oninput="calculateBatchTotals()" />
       </div>
       <div class="form-group" style="margin-bottom:0;">
         <label class="form-label" style="font-size:12px;">Unidad</label>
-        <input type="text" class="form-input row-unit" value="lb" />
-      </div>
-      <div class="form-group" style="margin-bottom:0;">
-        <label class="form-label" style="font-size:12px;">Peso (kg)</label>
-        <input type="number" class="form-input row-peso" placeholder="0" min="0" step="0.1" oninput="calculateBatchTotals()" />
+        <select class="form-select row-unit">
+          <option value="lb" selected>libra</option>
+          <option value="kg">kg</option>
+          <option value="unidad">unidad</option>
+        </select>
       </div>
     </div>
 
@@ -246,8 +246,15 @@ async function saveBasicInvoiceBatch() {
   rows.forEach(tr => {
     const matId = tr.querySelector('.row-mat').value;
     const qty = parseFloat(tr.querySelector('.row-qty').value) || 0;
-    const peso = parseFloat(tr.querySelector('.row-peso').value) || 0;
     const unit = tr.querySelector('.row-unit').value || 'lb';
+    const pesoInput = tr.querySelector('.row-peso');
+    let peso = 0;
+    if (pesoInput) {
+      peso = parseFloat(pesoInput.value) || 0;
+    } else {
+      if (unit === 'kg') peso = qty;
+      else if (unit === 'lb') peso = qty * 0.453592;
+    }
     const pbuy = parseFloat(tr.querySelector('.row-pbuy').value) || 0;
     const psell = parseFloat(tr.querySelector('.row-psell').value) || 0;
 
