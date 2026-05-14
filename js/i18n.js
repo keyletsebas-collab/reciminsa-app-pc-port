@@ -230,8 +230,8 @@ const TRANSLATIONS = {
         // Clients / Companies
         'cli.title': '👥 Gestión de Clientes',
         'cli.subtitle': 'Gestiona la información de tus clientes frecuentes',
-        'cli.empresas_title': '🏢 Zona de Empresas',
-        'cli.empresas_subtitle': 'Registra y gestiona los datos fiscales de tus empresas colaboradoras',
+        'cli.empresas_title': '🏢 Registro de Empresas',
+        'cli.empresas_subtitle': 'Administra la base de datos de empresas (RNC, Dirección, Contacto)',
         'cli.new_client': 'Nuevo Cliente / Empresa',
         'cli.btn': '💾 Guardar Cliente / Empresa',
         'cli.my_clients': 'Mis Clientes',
@@ -454,8 +454,8 @@ const TRANSLATIONS = {
         // Clients / Companies
         'cli.title': '👥 Client Management',
         'cli.subtitle': 'Manage your frequent clients information',
-        'cli.empresas_title': '🏢 Business Zone',
-        'cli.empresas_subtitle': 'Register and manage tax information for your partner companies',
+        'cli.empresas_title': '🏢 Company Registry',
+        'cli.empresas_subtitle': 'Manage the company database (Tax ID, Address, Contact)',
         'cli.new_client': 'New Client / Company',
         'cli.btn': '💾 Save Client / Company',
         'cli.my_clients': 'My Clients',
