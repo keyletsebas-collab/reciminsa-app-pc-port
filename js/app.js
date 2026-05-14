@@ -28,7 +28,8 @@ const PAGE_TITLE_KEYS = {
     clientes: 'page.clientes',
     ingresos: 'page.ingresos',
     egresos: 'page.egresos',
-    ajustes: 'page.ajustes'
+    ajustes: 'page.ajustes',
+    empresas: 'inv.tab_biz'
 };
 
 // ---- Current page tracker (used by sync.js) ----
@@ -58,6 +59,7 @@ function rerenderCurrentPage() {
         case 'historial': renderHistoryPage(target); break;
         case 'bitacoras': renderBitacorasPage(target); break;
         case 'facturas': renderInvoicesPage(target); break;
+        case 'empresas': renderInvoicesPage(target, 'empresa'); break;
         case 'codigos': renderCodigosPage(target); break;
         case 'clientes': renderClientesPage(target); break;
         case 'ingresos': renderIngresosPage(target); break;
@@ -67,12 +69,14 @@ function rerenderCurrentPage() {
 }
 
 // ---- Navigation ----
-function navigate(pageName) {
+function navigate(pageName, subTab = null) {
     // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
 
     // Show target page
-    const target = document.getElementById(`page-${pageName}`);
+    // Note: 'empresas' uses the 'facturas' page container
+    const realPageName = pageName === 'empresas' ? 'facturas' : pageName;
+    const target = document.getElementById(`page-${realPageName}`);
     if (!target) return;
     target.classList.remove('hidden');
 
@@ -93,7 +97,8 @@ function navigate(pageName) {
     switch (pageName) {
         case 'historial': renderHistoryPage(target); break;
         case 'bitacoras': renderBitacorasPage(target); break;
-        case 'facturas': renderInvoicesPage(target); break;
+        case 'facturas': renderInvoicesPage(target, subTab || 'local'); break;
+        case 'empresas': renderInvoicesPage(target, 'empresa'); break;
         case 'codigos': renderCodigosPage(target); break;
         case 'clientes': renderClientesPage(target); break;
         case 'ingresos': renderIngresosPage(target); break;

@@ -426,7 +426,7 @@ function getAllInvoices() {
 // =============================================
 // RENDER FACTURACIÓN PAGE
 // =============================================
-function renderInvoicesPage(container) {
+function renderInvoicesPage(container, initialTab = 'local') {
   container.innerHTML = `
     <div class="page-header">
       <div>
@@ -436,16 +436,16 @@ function renderInvoicesPage(container) {
     </div>
 
     <div class="invoice-tabs">
-      <button class="invoice-tab fac-tab active" id="fac-tab-btn-local" onclick="switchFacturacionTab('local')">
+      <button class="invoice-tab fac-tab ${initialTab === 'local' ? 'active' : ''}" id="fac-tab-btn-local" onclick="switchFacturacionTab('local')">
         ${t('inv.tab_local')}
       </button>
-      <button class="invoice-tab fac-tab" id="fac-tab-btn-empresa" onclick="switchFacturacionTab('empresa')">
+      <button class="invoice-tab fac-tab ${initialTab === 'empresa' ? 'active' : ''}" id="fac-tab-btn-empresa" onclick="switchFacturacionTab('empresa')">
         ${t('inv.tab_biz')}
       </button>
     </div>
 
-    <div id="fac-tab-local" class="invoice-tab-content fac-tab-content active"></div>
-    <div id="fac-tab-empresa" class="invoice-tab-content fac-tab-content"></div>
+    <div id="fac-tab-local" class="invoice-tab-content fac-tab-content ${initialTab === 'local' ? 'active' : ''}"></div>
+    <div id="fac-tab-empresa" class="invoice-tab-content fac-tab-content ${initialTab === 'empresa' ? 'active' : ''}"></div>
   `;
 
   initFacturaForm('local');
