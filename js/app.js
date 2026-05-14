@@ -29,7 +29,7 @@ const PAGE_TITLE_KEYS = {
     ingresos: 'page.ingresos',
     egresos: 'page.egresos',
     ajustes: 'page.ajustes',
-    empresas: 'inv.tab_biz'
+    empresas: 'page.empresas'
 };
 
 // ---- Current page tracker (used by sync.js) ----
@@ -59,7 +59,7 @@ function rerenderCurrentPage() {
         case 'historial': renderHistoryPage(target); break;
         case 'bitacoras': renderBitacorasPage(target); break;
         case 'facturas': renderInvoicesPage(target); break;
-        case 'empresas': renderInvoicesPage(target, 'empresa'); break;
+        case 'empresas': renderClientesPage(target, true); break;
         case 'codigos': renderCodigosPage(target); break;
         case 'clientes': renderClientesPage(target); break;
         case 'ingresos': renderIngresosPage(target); break;
@@ -98,7 +98,7 @@ function navigate(pageName, subTab = null) {
         case 'historial': renderHistoryPage(target); break;
         case 'bitacoras': renderBitacorasPage(target); break;
         case 'facturas': renderInvoicesPage(target, subTab || 'local'); break;
-        case 'empresas': renderInvoicesPage(target, 'empresa'); break;
+        case 'empresas': renderClientesPage(target, true); break;
         case 'codigos': renderCodigosPage(target); break;
         case 'clientes': renderClientesPage(target); break;
         case 'ingresos': renderIngresosPage(target); break;

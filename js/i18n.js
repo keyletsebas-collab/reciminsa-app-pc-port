@@ -27,7 +27,8 @@ const TRANSLATIONS = {
         'page.ingresos': 'Ingresos',
         'page.egresos': 'Egresos',
         'page.ajustes': 'Ajustes',
-        'page.clientes': 'Clientes y Empresas',
+        'page.clientes': 'Clientes',
+        'page.empresas': '🏢 Zona de Empresas',
 
         // Common
         'btn.save': 'Guardar',
@@ -227,8 +228,10 @@ const TRANSLATIONS = {
         'confirm.clear_data': '¿Seguro que deseas eliminar TODOS los datos de la app? Esta acción no se puede deshacer.',
 
         // Clients / Companies
-        'cli.title': '👥 Clientes y Empresas',
+        'cli.title': '👥 Gestión de Clientes',
         'cli.subtitle': 'Gestiona la información de tus clientes frecuentes',
+        'cli.empresas_title': '🏢 Zona de Empresas',
+        'cli.empresas_subtitle': 'Registra y gestiona los datos fiscales de tus empresas colaboradoras',
         'cli.new_client': 'Nuevo Cliente / Empresa',
         'cli.btn': '💾 Guardar Cliente / Empresa',
         'cli.my_clients': 'Mis Clientes',
@@ -255,7 +258,8 @@ const TRANSLATIONS = {
         'page.ingresos': 'Income',
         'page.egresos': 'Expenses',
         'page.ajustes': 'Settings',
-        'page.clientes': 'Clients & Companies',
+        'page.clientes': 'Clients',
+        'page.empresas': '🏢 Business Zone',
 
         'btn.save': 'Save',
         'btn.cancel': 'Cancel',
@@ -448,8 +452,10 @@ const TRANSLATIONS = {
         'confirm.clear_data': 'Are you sure you want to delete ALL app data? This cannot be undone.',
 
         // Clients / Companies
-        'cli.title': '👥 Clients & Companies',
+        'cli.title': '👥 Client Management',
         'cli.subtitle': 'Manage your frequent clients information',
+        'cli.empresas_title': '🏢 Business Zone',
+        'cli.empresas_subtitle': 'Register and manage tax information for your partner companies',
         'cli.new_client': 'New Client / Company',
         'cli.btn': '💾 Save Client / Company',
         'cli.my_clients': 'My Clients',

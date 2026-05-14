@@ -38,39 +38,43 @@ function updateClient(id, name, nit, address, contact) {
 // RENDER CLIENTES PAGE
 // =============================================
 
-function renderClientesPage(container) {
+function renderClientesPage(container, isEmpresaMode = false) {
   const clients = getClients();
+  const titleKey = isEmpresaMode ? 'cli.empresas_title' : 'cli.title';
+  const subtitleKey = isEmpresaMode ? 'cli.empresas_subtitle' : 'cli.subtitle';
 
   container.innerHTML = `
     <div class="page-header">
       <div>
-        <h2 class="section-title">${t('cli.title') || '👥 Clientes y Empresas'}</h2>
-        <p class="section-subtitle">${t('cli.subtitle') || 'Gestiona la información de tus clientes frecuentes'}</p>
+        <h2 class="section-title">${t(titleKey)}</h2>
+        <p class="section-subtitle">${t(subtitleKey)}</p>
       </div>
     </div>
 
     <div class="finance-grid">
       <!-- Form -->
       <div class="card card--elevated">
-        <h3 class="section-title" style="margin-bottom:16px;">${t('cli.new_client') || 'Nuevo Cliente'}</h3>
+        <h3 class="section-title" style="margin-bottom:16px;">${isEmpresaMode ? 'Nueva Empresa' : t('cli.new_client')}</h3>
         <div style="display:flex;flex-direction:column;gap:14px;">
           <div class="form-group">
-            <label class="form-label">${t('lbl.name') || 'Nombre / Razón Social'}</label>
-            <input id="cli-name" type="text" class="form-input" placeholder="Ej: Recicladora Nacional" />
+            <label class="form-label">${isEmpresaMode ? 'Nombre de la Empresa / Razón Social' : t('lbl.name')}</label>
+            <input id="cli-name" type="text" class="form-input" placeholder="${isEmpresaMode ? 'Ej: Recicladora Nacional' : 'Nombre completo'}" />
           </div>
           <div class="form-group">
-            <label class="form-label">${t('hist.nit') || 'RNC / Identificación'}</label>
+            <label class="form-label">${isEmpresaMode ? 'RNC / Comprobante Fiscal' : t('hist.nit')}</label>
             <input id="cli-nit" type="text" class="form-input" placeholder="Opcional" />
           </div>
           <div class="form-group">
-            <label class="form-label">${t('hist.address') || 'Dirección / Ubicación'}</label>
-            <input id="cli-address" type="text" class="form-input" placeholder="Opcional" />
+            <label class="form-label">${t('hist.address')}</label>
+            <input id="cli-address" type="text" class="form-input" placeholder="Dirección física o Email" />
           </div>
           <div class="form-group">
-            <label class="form-label">${t('hist.contact') || 'Contacto (Tel/Email)'}</label>
-            <input id="cli-contact" type="text" class="form-input" placeholder="Opcional" />
+            <label class="form-label">${t('hist.contact')}</label>
+            <input id="cli-contact" type="text" class="form-input" placeholder="Teléfono o persona de contacto" />
           </div>
-          <button class="btn-primary" onclick="handleAddClient()">${t('cli.btn') || '👥 Crear Cliente'}</button>
+          <button class="btn-primary" onclick="handleAddClient(${isEmpresaMode})">
+            ${isEmpresaMode ? '🏢 Guardar Empresa' : t('cli.btn')}
+          </button>
         </div>
       </div>
 
@@ -78,7 +82,7 @@ function renderClientesPage(container) {
       <div>
         <div class="card card--elevated" style="margin-bottom:16px;">
           <h3 class="section-title" style="margin-bottom:12px;font-size:1rem;">
-            ${t('cli.my_clients') || 'Mis Clientes'}
+            ${isEmpresaMode ? 'Empresas Registradas' : t('cli.my_clients')}
             <span class="badge badge--green" style="margin-left:8px;">${clients.length}</span>
           </h3>
           <div id="clients-list">
@@ -162,7 +166,7 @@ function cancelEditClientRow() {
 }
 
 // ---- Handlers ----
-function handleAddClient() {
+function handleAddClient(isEmpresaMode = false) {
   const name = document.getElementById('cli-name').value.trim();
   const nit = document.getElementById('cli-nit').value.trim();
   const address = document.getElementById('cli-address').value.trim();
