@@ -177,6 +177,14 @@ function renderSettingsPage(container) {
         </div>
       </div>
 
+      <!-- ===== COMPARTIR EN FAMILIA ===== -->
+      <div class="card card--elevated settings-section">
+        <h3 class="settings-section-title">👪 Compartir en Familia</h3>
+        <div id="settings-family-container">
+          <div style="font-size:0.85rem;color:var(--clr-text-muted);">Cargando...</div>
+        </div>
+      </div>
+
       <!-- ===== CACHÉ Y DATOS ===== -->
       <div class="card card--elevated settings-section">
         <h3 class="settings-section-title">🗂 Almacenamiento y Caché</h3>
@@ -275,6 +283,9 @@ function renderSettingsPage(container) {
 
   // Populate cache breakdown
   setTimeout(() => renderCacheBreakdown(), 0);
+
+  // Render family section
+  setTimeout(() => renderFamilySection(), 0);
 }
 
 // ---- Handlers ----
@@ -548,4 +559,258 @@ function handleExcelExport() {
   } else {
     showToast('❌ Error: Función de exportación no encontrada', 'error');
   }
+}
+
+// =============================================
+// COMPARTIR EN FAMILIA – RENDER & HANDLERS
+// =============================================
+
+function parseFirebaseUsersLocal(data) {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  return Object.values(data);
+}
+
+function renderFamilySection() {
+  const container = document.getElementById('settings-family-container');
+  if (!container) return;
+
+  const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+  const familyId = session.familyId;
+
+  if (familyId) {
+    container.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:0.8rem; color:var(--clr-text-muted);">
+          Actualmente estás en una familia. Tu base de datos está sincronizada y compartida en tiempo real con todos los miembros de este grupo.
+        </p>
+        <div style="padding:12px; background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--r-md); display:flex; flex-direction:column; gap:8px;">
+          <div style="font-size:0.75rem; color:var(--clr-text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em;">Código de tu Familia</div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="family-code-text" style="font-family:monospace; font-size:1.25rem; font-weight:700; color:var(--clr-primary); letter-spacing:0.1em;">${familyId}</span>
+            <button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="copyFamilyCode()">📋 Copiar</button>
+          </div>
+        </div>
+        
+        <button class="btn-danger" style="width:100%; justify-content:center; margin-top:8px;" onclick="handleLeaveFamily()">
+          🚪 Salir de la Familia
+        </button>
+      </div>
+    `;
+  } else {
+    container.innerHTML = `
+      <div style="display:flex; flex-direction:column; gap:12px;">
+        <p style="font-size:0.8rem; color:var(--clr-text-muted);">
+          Crea una familia para compartir tu base de datos con otros miembros, o únete a una familia existente usando su código de 10 dígitos.
+        </p>
+        
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:4px;">
+          <button class="btn-primary" style="justify-content:center; font-size:0.85rem;" onclick="handleCreateFamily()">
+            ➕ Crear Familia
+          </button>
+          <button class="btn-secondary" style="justify-content:center; font-size:0.85rem;" onclick="showJoinFamilyInput()">
+            🔑 Unirse a Familia
+          </button>
+        </div>
+        
+        <div id="join-family-box" style="display:none; margin-top:8px; padding-top:12px; border-top:1px solid var(--clr-border);">
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label" style="font-size:0.75rem;">Código de Familia (10 dígitos)</label>
+            <input id="join-family-code-input" type="text" class="form-input" placeholder="Ej: 1234567890" maxlength="10" 
+                   oninput="this.value = this.value.replace(/[^0-9]/g, '')" />
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn-primary" style="flex:1; justify-content:center; padding:6px 12px; font-size:0.82rem;" onclick="submitJoinFamily()">Unirse</button>
+            <button class="btn-secondary" style="padding:6px 12px; font-size:0.82rem;" onclick="hideJoinFamilyInput()">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    `;
+  }
+}
+
+function copyFamilyCode() {
+  const codeEl = document.getElementById('family-code-text');
+  if (!codeEl) return;
+  navigator.clipboard.writeText(codeEl.textContent).then(() => {
+    showToast('📋 Código copiado al portapapeles', 'success');
+  }).catch(() => {
+    showToast('❌ No se pudo copiar automáticamente', 'error');
+  });
+}
+
+async function handleCreateFamily() {
+  if (!confirm('¿Estás seguro de que quieres crear una familia? Compartirás tu base de datos actual.')) return;
+
+  let code = '';
+  // Generate random 10 digit code
+  for (let i = 0; i < 10; i++) {
+    code += Math.floor(Math.random() * 10);
+  }
+
+  const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+  session.familyId = code;
+  localStorage.setItem('recim_session', JSON.stringify(session));
+
+  // Update in users list
+  const users = JSON.parse(localStorage.getItem('recim_users') || '[]');
+  const idx = users.findIndex(u => u.accountId === session.accountId);
+  if (idx !== -1) {
+    users[idx].familyId = code;
+    localStorage.setItem('recim_users', JSON.stringify(users));
+  }
+
+  // Sincronizar en la nube
+  if (isFirebaseActive && db) {
+    try {
+      showToast('📡 Registrando familia en el servidor...', 'info');
+      // 1. Guardar en usuarios de Firebase
+      await db.ref('users').set(users);
+      
+      // 2. Copiar los datos actuales a la ruta de la familia en Firebase
+      const currentDataSnapshot = await db.ref(`data/${session.accountId}`).get();
+      if (currentDataSnapshot.exists()) {
+        await db.ref(`data/family_${code}`).set(currentDataSnapshot.val());
+      }
+      
+      console.log('Familia creada y datos migrados.');
+    } catch (err) {
+      console.error("Error al crear familia en Firebase:", err);
+    }
+  }
+
+  showToast('👪 ¡Familia creada exitosamente!', 'success');
+  renderFamilySection();
+}
+
+function showJoinFamilyInput() {
+  const box = document.getElementById('join-family-box');
+  if (box) box.style.display = 'block';
+}
+
+function hideJoinFamilyInput() {
+  const box = document.getElementById('join-family-box');
+  if (box) box.style.display = 'none';
+}
+
+async function submitJoinFamily() {
+  const input = document.getElementById('join-family-code-input');
+  const code = input?.value.trim();
+  if (!code || code.length !== 10) {
+    showToast('⚠️ El código debe tener exactamente 10 dígitos', 'warning');
+    return;
+  }
+
+  if (isFirebaseActive && db) {
+    try {
+      showToast('📡 Validando código de familia...', 'info');
+      
+      // Fetch users from Firebase
+      const snapshot = await db.ref('users').get();
+      const cloudUsers = parseFirebaseUsersLocal(snapshot.val());
+      
+      // Find if anyone belongs to this family
+      const familyExists = cloudUsers.some(u => u.familyId === code);
+      if (!familyExists) {
+        showToast('❌ El código de familia no es válido o no existe.', 'error');
+        return;
+      }
+
+      // Valid: Join!
+      const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+      session.familyId = code;
+      localStorage.setItem('recim_session', JSON.stringify(session));
+
+      // Update in local users array and Firebase
+      const localUsers = JSON.parse(localStorage.getItem('recim_users') || '[]');
+      const myIdx = localUsers.findIndex(u => u.accountId === session.accountId);
+      if (myIdx !== -1) {
+        localUsers[myIdx].familyId = code;
+        localStorage.setItem('recim_users', JSON.stringify(localUsers));
+      }
+      
+      // Update global user array on Firebase
+      const cloudIdx = cloudUsers.findIndex(u => u.accountId === session.accountId);
+      if (cloudIdx !== -1) {
+        cloudUsers[cloudIdx].familyId = code;
+      } else {
+        cloudUsers.push({
+          accountId: session.accountId,
+          name: session.name,
+          email: session.email,
+          avatar: session.avatar,
+          provider: session.provider,
+          familyId: code
+        });
+      }
+      await db.ref('users').set(cloudUsers);
+
+      // Clear local database to load the family data cleanly
+      const keysToRemove = [
+        'recim_invoices',
+        'recim_material_codes',
+        'recim_clients',
+        'recim_ingresos',
+        'recim_egresos'
+      ];
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
+      // Force Sync pull immediately
+      if (window.syncPullData) {
+        await window.syncPullData(`family_${code}`);
+      }
+
+      showToast('👪 ¡Te has unido a la familia exitosamente!', 'success');
+      renderFamilySection();
+    } catch (err) {
+      console.error("Error al unirse a la familia:", err);
+      showToast('❌ Error al conectar con el servidor', 'error');
+    }
+  } else {
+    showToast('⚠️ Conexión de red no disponible', 'warning');
+  }
+}
+
+async function handleLeaveFamily() {
+  if (!confirm('¿Estás seguro de que deseas salir de la familia? Perderás acceso a la base de datos compartida y volverás a tu base de datos privada.')) return;
+
+  const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+  session.familyId = null;
+  localStorage.setItem('recim_session', JSON.stringify(session));
+
+  // Update in local users
+  const users = JSON.parse(localStorage.getItem('recim_users') || '[]');
+  const idx = users.findIndex(u => u.accountId === session.accountId);
+  if (idx !== -1) {
+    users[idx].familyId = null;
+    localStorage.setItem('recim_users', JSON.stringify(users));
+  }
+
+  // Update in Firebase
+  if (isFirebaseActive && db) {
+    try {
+      showToast('📡 Saliendo de la familia...', 'info');
+      await db.ref('users').set(users);
+    } catch (err) {
+      console.error("Error al actualizar usuario en Firebase:", err);
+    }
+  }
+
+  // Clear local database
+  const keysToRemove = [
+    'recim_invoices',
+    'recim_material_codes',
+    'recim_clients',
+    'recim_ingresos',
+    'recim_egresos'
+  ];
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
+  // Pull user's private data from cloud
+  if (window.syncPullData) {
+    await window.syncPullData(session.accountId);
+  }
+
+  showToast('👋 Has salido de la familia', 'success');
+  renderFamilySection();
 }

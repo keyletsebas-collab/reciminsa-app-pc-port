@@ -114,13 +114,25 @@
     // ---- Cloud Sync Logic (Firebase) ----
 
     /**
+     * Returns the appropriate cloud database ID (either family ID or user account ID).
+     */
+    function getSyncDbId() {
+        try {
+            const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+            if (session.familyId) {
+                return `family_${session.familyId}`;
+            }
+            return session.accountId || null;
+        } catch (_) { return null; }
+    }
+
+    /**
      * Push current localStorage data to Firebase.
      */
     async function syncPushData() {
         if (!isFirebaseActive || !db) return;
-        const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
-        const accountId = session.accountId;
-        if (!accountId) return;
+        const dbId = getSyncDbId();
+        if (!dbId) return;
 
         const dataToSync = {};
         let hasData = false;
@@ -135,8 +147,8 @@
         try {
             // Use null if no data to ensure the cloud path is cleared
             const finalData = hasData ? dataToSync : null;
-            await db.ref(`data/${accountId}`).set(finalData);
-            console.log(`☁️ Firebase Push: ${hasData ? 'Datos actualizados' : 'Nube limpiada (vacío)'}`);
+            await db.ref(`data/${dbId}`).set(finalData);
+            console.log(`☁️ Firebase Push: ${hasData ? 'Datos actualizados' : 'Nube limpiada (vacío)'} para DB: ${dbId}`);
             return true;
         } catch (err) {
             console.error('Firebase Sync Push Error:', err);
@@ -147,16 +159,15 @@
     /**
      * Pull data from Firebase and update localStorage.
      */
-    async function syncPullData(accountId) {
+    async function syncPullData(dbId) {
         if (!isFirebaseActive || !db) return;
-        if (!accountId) {
-            const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
-            accountId = session.accountId;
+        if (!dbId) {
+            dbId = getSyncDbId();
         }
-        if (!accountId) return;
+        if (!dbId) return;
 
         try {
-            const snapshot = await db.ref(`data/${accountId}`).get();
+            const snapshot = await db.ref(`data/${dbId}`).get();
             const remoteData = snapshot.val() || {}; // Fallback to empty object
 
             let changed = false;
@@ -279,11 +290,11 @@
 
     // ---- Initial Load: Pull data from cloud ----
     window.addEventListener('load', () => {
-        const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
-        if (session.accountId) {
+        const dbId = getSyncDbId();
+        if (dbId) {
             // Give it a moment to ensure isFirebaseActive is set
             setTimeout(() => {
-                if (isFirebaseActive) syncPullData(session.accountId);
+                if (isFirebaseActive) syncPullData(dbId);
             }, 1000);
         }
     });

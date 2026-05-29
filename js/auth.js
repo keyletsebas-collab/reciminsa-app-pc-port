@@ -118,8 +118,20 @@ async function handleLogin(evt) {
         email: found.email,
         avatar: (found.avatar || found.name || 'U')[0].toUpperCase(),
         provider: 'email',
-        accountId: found.accountId
+        accountId: found.accountId,
+        familyId: found.familyId || null
       };
+
+      // Clear any residue user storage before starting the new session
+      const keysToRemove = [
+        'recim_invoices',
+        'recim_material_codes',
+        'recim_clients',
+        'recim_ingresos',
+        'recim_egresos'
+      ];
+      keysToRemove.forEach(k => localStorage.removeItem(k));
+
       localStorage.setItem('recim_session', JSON.stringify(session));
       showToast(`✅ Bienvenido de nuevo, ${found.name}`, 'success');
       initApp(session);
@@ -191,17 +203,27 @@ async function handleSignup(evt) {
 
       if (exists && !exists.password) {
         // Upgrade old social account with a password
-        currentUsers[existsIdx] = { ...exists, name, password: btoa(password), provider: 'email', avatar: name[0].toUpperCase() };
-        session = { name, email: exists.email, avatar: name[0].toUpperCase(), provider: 'email', accountId: exists.accountId };
+        currentUsers[existsIdx] = { ...exists, name, password: btoa(password), provider: 'email', avatar: name[0].toUpperCase(), familyId: exists.familyId || null };
+        session = { name, email: exists.email, avatar: name[0].toUpperCase(), provider: 'email', accountId: exists.accountId, familyId: exists.familyId || null };
         showToast('✅ Cuenta actualizada con contraseña', 'success');
       } else {
         // Brand-new account
         const accountId = `ACC-${Date.now()}`;
-        const newUser = { name, email: identity, password: btoa(password), provider: 'email', accountId, avatar: name[0].toUpperCase(), createdAt: new Date().toISOString() };
+        const newUser = { name, email: identity, password: btoa(password), provider: 'email', accountId, avatar: name[0].toUpperCase(), createdAt: new Date().toISOString(), familyId: null };
         currentUsers.push(newUser);
-        session = { name, email: identity, avatar: name[0].toUpperCase(), provider: 'email', accountId };
+        session = { name, email: identity, avatar: name[0].toUpperCase(), provider: 'email', accountId, familyId: null };
         showToast('🎉 Cuenta creada exitosamente', 'success');
       }
+
+      // Clear any residue user storage before starting the new session
+      const keysToRemove = [
+        'recim_invoices',
+        'recim_material_codes',
+        'recim_clients',
+        'recim_ingresos',
+        'recim_egresos'
+      ];
+      keysToRemove.forEach(k => localStorage.removeItem(k));
 
       // Guardar localmente
       localStorage.setItem('recim_users', JSON.stringify(currentUsers));
@@ -228,7 +250,18 @@ async function handleSignup(evt) {
 // ---- Logout ----
 function handleLogout() {
   if (!confirm('¿Seguro que deseas cerrar sesión?')) return;
-  localStorage.removeItem('recim_session');
+  
+  // Clear session and all user database keys
+  const keysToRemove = [
+    'recim_session',
+    'recim_invoices',
+    'recim_material_codes',
+    'recim_clients',
+    'recim_ingresos',
+    'recim_egresos'
+  ];
+  keysToRemove.forEach(k => localStorage.removeItem(k));
+
   document.getElementById('app-screen').classList.add('hidden');
   document.getElementById('auth-screen').classList.remove('hidden');
   // Reset login form state

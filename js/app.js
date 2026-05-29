@@ -133,6 +133,12 @@ function initApp(user) {
     // Default page (Restricted to Ingresos/Egresos on mobile)
     const defaultPage = isMobile() ? 'ingresos' : 'historial';
     navigate(defaultPage);
+
+    // Pull correct data from Firebase cloud immediately on boot
+    if (window.syncPullData) {
+        const dbId = user.familyId ? `family_${user.familyId}` : user.accountId;
+        window.syncPullData(dbId);
+    }
 }
 
 // ---- Restore session on load ----
