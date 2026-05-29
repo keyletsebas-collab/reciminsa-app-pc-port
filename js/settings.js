@@ -571,6 +571,60 @@ function parseFirebaseUsersLocal(data) {
   return Object.values(data);
 }
 
+async function updateFamilyMembersDOM(familyId, myAccountId) {
+  const listContainer = document.getElementById('family-members-list');
+  if (!listContainer) return;
+
+  const renderList = (members) => {
+    if (members.length === 0) {
+      listContainer.innerHTML = `<div style="font-size:0.8rem; color:var(--clr-text-muted);">No hay otros miembros.</div>`;
+      return;
+    }
+    listContainer.innerHTML = members.map(m => {
+      const isMe = m.accountId === myAccountId;
+      const initial = (m.avatar || m.name || 'U')[0].toUpperCase();
+      return `
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 12px; background:var(--clr-surface-2); border:1px solid var(--clr-border); border-radius:var(--r-md);">
+          <div style="width:32px; height:32px; border-radius:50%; background:var(--clr-primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:0.85rem; flex-shrink:0; box-shadow: 0 2px 5px rgba(0,0,0,0.1);">
+            ${initial}
+          </div>
+          <div style="flex:1; min-width:0;">
+            <div style="font-size:0.84rem; font-weight:600; color:var(--clr-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:6px;">
+              <span>${m.name}</span>
+              ${isMe ? `<span class="badge badge--green" style="padding:2px 6px; font-size:0.65rem; font-weight:normal; border-radius:4px;">Tú</span>` : ''}
+            </div>
+            <div style="font-size:0.74rem; color:var(--clr-text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">
+              ${m.email || '—'}
+            </div>
+          </div>
+        </div>
+      `;
+    }).join('');
+  };
+
+  // 1. Load from local cache initially
+  const localUsers = JSON.parse(localStorage.getItem('recim_users') || '[]');
+  const localMembers = localUsers.filter(u => u.familyId === familyId);
+  renderList(localMembers);
+
+  // 2. Fetch the latest list from Firebase in the background
+  if (isFirebaseActive && db) {
+    try {
+      const snapshot = await db.ref('users').get();
+      const cloudUsers = parseFirebaseUsersLocal(snapshot.val());
+      
+      // Update local storage cache
+      localStorage.setItem('recim_users', JSON.stringify(cloudUsers));
+
+      // Filter and render the latest members
+      const updatedMembers = cloudUsers.filter(u => u.familyId === familyId);
+      renderList(updatedMembers);
+    } catch (err) {
+      console.warn("Error actualizando lista de miembros familiares desde Firebase:", err);
+    }
+  }
+}
+
 function renderFamilySection() {
   const container = document.getElementById('settings-family-container');
   if (!container) return;
@@ -591,12 +645,22 @@ function renderFamilySection() {
             <button class="btn-secondary" style="padding:4px 8px; font-size:0.75rem;" onclick="copyFamilyCode()">📋 Copiar</button>
           </div>
         </div>
+
+        <div style="margin-top:8px; border-top:1px solid var(--clr-border); padding-top:12px;">
+          <div style="font-size:0.75rem; color:var(--clr-text-muted); font-weight:600; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:8px;">Miembros de la Familia</div>
+          <div id="family-members-list" style="display:flex; flex-direction:column; gap:8px;">
+            <div style="font-size:0.8rem; color:var(--clr-text-muted);">Cargando miembros...</div>
+          </div>
+        </div>
         
         <button class="btn-danger" style="width:100%; justify-content:center; margin-top:8px;" onclick="handleLeaveFamily()">
           🚪 Salir de la Familia
         </button>
       </div>
     `;
+
+    // Render family members (first from local cache, then update from Firebase)
+    setTimeout(() => updateFamilyMembersDOM(familyId, session.accountId), 0);
   } else {
     container.innerHTML = `
       <div style="display:flex; flex-direction:column; gap:12px;">
