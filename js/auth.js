@@ -326,7 +326,13 @@ async function handleVerifySignup(evt) {
     return;
   }
 
-  if (codeInput !== pending.code) {
+  const cleanInput = codeInput.replace(/\D/g, '');
+  const cleanStored = pending.code.replace(/\D/g, '');
+
+  console.log("🔍 [Signup Verify Debug] Input:", codeInput, "Clean Input:", cleanInput);
+  console.log("🔍 [Signup Verify Debug] Stored Code:", pending.code, "Clean Stored:", cleanStored);
+
+  if (!cleanInput || cleanInput !== cleanStored) {
     errorEl.textContent = 'Código incorrecto. Verifica tu correo e inténtalo de nuevo.';
     errorEl.classList.remove('hidden');
     return;
@@ -667,7 +673,13 @@ function handleVerifyCode(evt) {
     return;
   }
   
-  if (codeInput !== session.code) {
+  const cleanInput = codeInput.replace(/\D/g, '');
+  const cleanStored = session.code.replace(/\D/g, '');
+
+  console.log("🔍 [Forgot Pass Verify Debug] Input:", codeInput, "Clean Input:", cleanInput);
+  console.log("🔍 [Forgot Pass Verify Debug] Stored Code:", session.code, "Clean Stored:", cleanStored);
+
+  if (!cleanInput || cleanInput !== cleanStored) {
     errorEl.textContent = 'Código incorrecto. Verifica el correo e inténtalo de nuevo.';
     errorEl.classList.remove('hidden');
     return;
