@@ -188,6 +188,36 @@ function renderSettingsPage(container) {
         </div>
       </div>
 
+      <!-- ===== RESPALDO EN GOOGLE DRIVE ===== -->
+      <div class="card card--elevated settings-section">
+        <h3 class="settings-section-title">${t('set.gdrive_title')}</h3>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <p style="font-size:0.8rem; color:var(--clr-text-muted);">
+            ${t('set.gdrive_desc')}
+          </p>
+          
+          <div class="form-group" style="margin-bottom:8px;">
+            <label class="form-label" style="font-size:0.75rem;">${t('set.gdrive_folder')}</label>
+            <input id="settings-gdrive-folder" type="text" class="form-input" 
+                   placeholder="${t('set.gdrive_folder_ph')}" 
+                   value="${settings.gdriveFolder || ''}" 
+                   style="width:100%;" />
+          </div>
+
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:8px 0; border-top:1px solid var(--clr-border);">
+            <span class="settings-item-label">Estado de Conexión</span>
+            <span id="gdrive-status-badge" class="badge" style="font-size:0.72rem; padding:3px 8px; border-radius:6px; font-weight:600;">
+              Calculando...
+            </span>
+          </div>
+
+          <button id="btn-test-gdrive" class="btn-primary" style="width:100%; justify-content:center; gap:8px;" onclick="handleGDriveSave()">
+            <span>${t('set.gdrive_btn')}</span>
+            <div class="btn-spinner hidden" id="gdrive-spinner"></div>
+          </button>
+        </div>
+      </div>
+
       <!-- ===== CACHÉ Y DATOS ===== -->
       <div class="card card--elevated settings-section">
         <h3 class="settings-section-title">🗂 Almacenamiento y Caché</h3>
@@ -289,6 +319,105 @@ function renderSettingsPage(container) {
 
   // Render family section
   setTimeout(() => renderFamilySection(), 0);
+
+  // Update Google Drive status badge
+  setTimeout(() => updateGDriveStatusDOM(), 0);
+}
+
+// ---- Google Drive Backup Handlers ----
+
+function updateGDriveStatusDOM() {
+  const el = document.getElementById('gdrive-status-badge');
+  if (!el) return;
+
+  const settings = getSettings();
+  const folder = settings.gdriveFolder;
+  const status = settings.gdriveStatus;
+
+  if (!folder) {
+    el.className = 'badge badge--yellow';
+    el.textContent = 'No Configurado';
+  } else if (status === 'success') {
+    el.className = 'badge badge--green';
+    el.textContent = 'Sincronizado';
+  } else if (status === 'error') {
+    el.className = 'badge badge--red';
+    el.textContent = 'Error Conexión';
+  } else {
+    el.className = 'badge badge--blue';
+    el.textContent = 'Pendiente';
+  }
+}
+
+async function handleGDriveSave() {
+  const folderInput = document.getElementById('settings-gdrive-folder');
+  const folderVal = folderInput ? folderInput.value.trim() : '';
+
+  const btn = document.getElementById('btn-test-gdrive');
+  const spinner = document.getElementById('gdrive-spinner');
+
+  if (!folderVal) {
+    saveSetting('gdriveFolder', '');
+    saveSetting('gdriveStatus', '');
+    updateGDriveStatusDOM();
+    showToast('⚠️ Dirección de Google Drive eliminada', 'warning');
+    return;
+  }
+
+  // 1. Guardar ajustes locales temporalmente
+  saveSetting('gdriveFolder', folderVal);
+  saveSetting('gdriveStatus', 'pending');
+  updateGDriveStatusDOM();
+
+  // 2. Mostrar spinner e indicar carga
+  if (btn) btn.disabled = true;
+  if (spinner) spinner.classList.remove('hidden');
+
+  showToast('📡 Probando respaldo en Google Drive...', 'info');
+
+  try {
+    // 3. Obtener datos locales que se van a respaldar
+    const dataToSync = {};
+    const WATCHED_KEYS = [
+      'recim_invoices',
+      'recim_material_codes',
+      'recim_clients',
+      'recim_ingresos',
+      'recim_egresos'
+    ];
+    let hasData = false;
+    
+    WATCHED_KEYS.forEach(k => {
+      const val = localStorage.getItem(userKey(k));
+      if (val) {
+        dataToSync[k] = JSON.parse(val);
+        hasData = true;
+      }
+    });
+
+    // 4. Intentar enviar el respaldo
+    if (typeof window.syncPushGDrive === 'function') {
+      const success = await window.syncPushGDrive(dataToSync);
+      
+      if (success) {
+        saveSetting('gdriveStatus', 'success');
+        showToast(t('toast.gdrive_success'), 'success');
+      } else {
+        saveSetting('gdriveStatus', 'error');
+        showToast(t('toast.gdrive_error') + 'Verifica Apps Script', 'error');
+      }
+    } else {
+      throw new Error('Módulo de sincronización de Google Drive no cargado aún.');
+    }
+  } catch (err) {
+    console.error('Error saving Google Drive settings:', err);
+    saveSetting('gdriveStatus', 'error');
+    showToast(t('toast.gdrive_error') + err.message, 'error');
+  } finally {
+    if (btn) btn.disabled = false;
+    if (spinner) spinner.classList.add('hidden');
+    updateGDriveStatusDOM();
+  }
 }
 
 // ---- Handlers ----

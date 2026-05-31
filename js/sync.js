@@ -156,9 +156,79 @@
 
             if (error) throw error;
             console.log(`☁️ Supabase Push: ${hasData ? 'Datos actualizados' : 'Nube limpiada (vacío)'} para DB: ${dbId}`);
+            
+            // Sincronizar también con Google Drive (respaldo dual automático)
+            syncPushGDrive(finalData).then(ok => {
+                if (ok) {
+                    console.log("☁️ Google Drive: Sincronización automática de respaldo exitosa.");
+                }
+            });
+
             return true;
         } catch (err) {
             console.error('Supabase Sync Push Error:', err);
+            return false;
+        }
+    }
+
+    /**
+     * Parse Google Drive URL/ID to extract Folder ID.
+     */
+    function extractFolderId(input) {
+        if (!input) return null;
+        const match = input.match(/\/folders\/([a-zA-Z0-9-_]+)/);
+        if (match && match[1]) {
+            return match[1];
+        }
+        return input.trim();
+    }
+
+    /**
+     * Push current database data to Google Drive.
+     */
+    async function syncPushGDrive(data) {
+        let settings = {};
+        try {
+            settings = JSON.parse(localStorage.getItem('recim_settings') || '{}');
+        } catch (_) { return false; }
+
+        const folderInput = settings.gdriveFolder;
+        if (!folderInput) return false; // Not configured
+
+        const folderId = extractFolderId(folderInput);
+        if (!folderId) return false;
+
+        const scriptUrl = localStorage.getItem('recim_gmail_script_url') || 'https://script.google.com/macros/s/AKfycbzrwE5FXgHuCGMIwiZE34DZChQP4zhvxaicj5eXcXKFw7qrew_jU6dVc2e50VxBQxP6/exec';
+        
+        let accountId = 'default';
+        try {
+            const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+            accountId = session.accountId || 'default';
+        } catch (_) {}
+
+        const fileName = `reciminsa_backup_${accountId}.json`;
+
+        console.log(`📡 Enviando respaldo a Google Drive folderId: ${folderId}`);
+        
+        try {
+            await fetch(scriptUrl, {
+                method: 'POST',
+                mode: 'no-cors',
+                headers: {
+                    'Content-Type': 'text/plain;charset=utf-8'
+                },
+                body: JSON.stringify({
+                    action: 'backup',
+                    folderId: folderId,
+                    fileName: fileName,
+                    content: JSON.stringify(data || {})
+                })
+            });
+
+            console.log('☁️ Google Drive Sync: Respaldo enviado con éxito.');
+            return true;
+        } catch (err) {
+            console.error('Google Drive Sync Push Error:', err);
             return false;
         }
     }
@@ -245,6 +315,7 @@
     window.syncPushData = syncPushData;
     window.syncPullData = syncPullData;
     window.forceSync = forceSync;
+    window.syncPushGDrive = syncPushGDrive;
 
     // ---- Main storage event listener ----
     window.addEventListener('storage', function (event) {

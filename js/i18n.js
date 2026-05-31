@@ -226,6 +226,14 @@ const TRANSLATIONS = {
         'toast.import_success': '✅ Datos importados correctamente',
         'toast.import_error': '❌ Error al importar el archivo',
         'confirm.clear_data': '¿Seguro que deseas eliminar TODOS los datos de la app? Esta acción no se puede deshacer.',
+        'set.gdrive_title': '💾 Respaldo en Google Drive',
+        'set.gdrive_desc': 'Guarda tus datos de manera segura y automática tanto en Supabase como en tu carpeta de Google Drive.',
+        'set.gdrive_folder': 'Dirección / URL de la Carpeta de Google Drive',
+        'set.gdrive_folder_ph': 'Ej: https://drive.google.com/drive/folders/1A2B3C...',
+        'set.gdrive_btn': '💾 Probar y Guardar Respaldo',
+        'toast.gdrive_saved': '✅ Ajustes de Google Drive guardados',
+        'toast.gdrive_success': '✅ ¡Respaldo completado y guardado en Google Drive!',
+        'toast.gdrive_error': '❌ Error al respaldar en Google Drive: ',
 
         // Clients / Companies
         'cli.title': '👥 Gestión de Clientes',
@@ -450,6 +458,14 @@ const TRANSLATIONS = {
         'toast.import_success': '✅ Data imported successfully',
         'toast.import_error': '❌ Error importing file',
         'confirm.clear_data': 'Are you sure you want to delete ALL app data? This cannot be undone.',
+        'set.gdrive_title': '💾 Google Drive Backup',
+        'set.gdrive_desc': 'Save your data securely and automatically both on Supabase and in your Google Drive folder.',
+        'set.gdrive_folder': 'Google Drive Folder URL or ID',
+        'set.gdrive_folder_ph': 'E.g.: https://drive.google.com/drive/folders/1A2B3C...',
+        'set.gdrive_btn': '💾 Test & Save Backup',
+        'toast.gdrive_saved': '✅ Google Drive settings saved',
+        'toast.gdrive_success': '✅ Backup completed and saved to Google Drive successfully!',
+        'toast.gdrive_error': '❌ Error backing up to Google Drive: ',
 
         // Clients / Companies
         'cli.title': '👥 Client Management',
@@ -667,6 +683,14 @@ const TRANSLATIONS = {
         'toast.import_success': '✅ Dados importados com sucesso',
         'toast.import_error': '❌ Erro ao importar arquivo',
         'confirm.clear_data': 'Tem certeza de que deseja excluir TODOS os dados do app? Esta ação não pode ser desfeita.',
+        'set.gdrive_title': '💾 Backup no Google Drive',
+        'set.gdrive_desc': 'Salve seus dados com segurança e de forma automática tanto no Supabase quanto na sua pasta do Google Drive.',
+        'set.gdrive_folder': 'Endereço / URL da pasta do Google Drive',
+        'set.gdrive_folder_ph': 'Ex: https://drive.google.com/drive/folders/1A2B3C...',
+        'set.gdrive_btn': '💾 Testar e Salvar Backup',
+        'toast.gdrive_saved': '✅ Configurações do Google Drive salvas',
+        'toast.gdrive_success': '✅ Backup concluído e salvo no Google Drive com sucesso!',
+        'toast.gdrive_error': '❌ Erro ao salvar backup no Google Drive: ',
     }
 };
 

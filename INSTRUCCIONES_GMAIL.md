@@ -12,13 +12,46 @@ Copia el siguiente código en tu editor de Google Apps Script:
 
 ```javascript
 /**
- * Script de Google Apps para enviar correos de recuperación de contraseña de forma segura.
- * Desplegar desde la cuenta: Noreplyreciminsasrl@gmail.com
+ * Script de Google Apps para enviar correos y realizar respaldos en Google Drive de forma segura.
+ * Desplegar desde tu cuenta de Google.
  */
 
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
+    
+    // CASO A: Respaldo en Google Drive
+    if (data.action === 'backup') {
+      var folderId = data.folderId;
+      var fileName = data.fileName;
+      var content = data.content; // contenido del JSON de respaldo
+      
+      var folder;
+      if (folderId) {
+        folder = DriveApp.getFolderById(folderId);
+      } else {
+        folder = DriveApp.getRootFolder();
+      }
+      
+      // Buscar si ya existe un archivo con ese nombre para actualizarlo y evitar duplicados
+      var files = folder.getFilesByName(fileName);
+      var file;
+      if (files.hasNext()) {
+        file = files.next();
+        file.setContent(content);
+      } else {
+        file = folder.createFile(fileName, content, MimeType.PLAIN_TEXT);
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        status: "success", 
+        message: "Respaldo guardado exitosamente en Google Drive.",
+        fileUrl: file.getUrl() 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // CASO B: Envío de Correo (Verificación y Recuperación)
     var to = data.to;
     var subject = data.subject;
     var htmlBody = data.htmlBody;
@@ -64,7 +97,7 @@ Sigue estos **4 pasos sencillos** para activar el envío:
 4. Haz clic en **Implementar**.
 
 ### Paso 3: Autorizar Permisos
-1. Google te solicitará autorizar permisos para que el script pueda usar el servicio de Gmail. Haz clic en **Autorizar acceso**.
+1. Google te solicitará autorizar permisos para que el script pueda usar tanto el servicio de Gmail (para enviar correos) como Google Drive (para almacenar los respaldos de base de datos). Haz clic en **Autorizar acceso**.
 2. Selecciona tu cuenta de Gmail.
 3. Te saldrá un aviso de Google de "Aplicación no verificada". Haz clic en **Configuración avanzada** (abajo a la izquierda) y luego en **Ir a Proyecto sin título (no seguro)**.
 4. Haz clic en **Permitir**.
