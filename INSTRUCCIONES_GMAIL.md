@@ -1,6 +1,8 @@
-# ✉️ Configuración de Recuperación de Contraseña por Gmail (Reciminsa)
+# ✉️ Verificación de Registro y Recuperación de Contraseña por Gmail (Reciminsa)
 
-Este documento detalla los pasos necesarios para desplegar y configurar el servicio de recuperación de contraseña de Reciminsa utilizando **Google Apps Script** y tu cuenta **Noreplyreciminsasrl@gmail.com**.
+Este documento detalla los pasos necesarios para desplegar y configurar el servicio global de correos de Reciminsa utilizando **Google Apps Script** y tu cuenta **Noreplyreciminsasrl@gmail.com**.
+
+Este script centralizado maneja de forma automática y segura tanto la **activación/verificación de cuentas nuevas al registrarse** como el **restablecimiento de contraseñas de cuentas existentes**.
 
 ---
 
@@ -71,4 +73,4 @@ Sigue estos **4 pasos sencillos** para activar el envío:
 Google te proporcionará una **URL de la aplicación web**. 
 Esta URL ya ha sido integrada de forma permanente y global en el código de tu aplicación de Reciminsa (`js/auth.js`). 
 
-¡Cualquier instalación o usuario que abra la aplicación podrá recuperar su contraseña de forma 100% real y automática mediante tu correo central de Gmail de inmediato!
+¡Cualquier instalación o usuario que abra la aplicación podrá activar su cuenta al registrarse y recuperar su contraseña de forma 100% real y automática mediante tu correo central de Gmail de inmediato!
