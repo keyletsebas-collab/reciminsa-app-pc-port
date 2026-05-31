@@ -187,18 +187,17 @@
      * Push current database data to Google Drive.
      */
     async function syncPushGDrive(data) {
-        let settings = {};
-        try {
-            settings = JSON.parse(localStorage.getItem('recim_settings') || '{}');
-        } catch (_) { return false; }
-
-        const folderInput = settings.gdriveFolder;
+        const folderInput = localStorage.getItem(userKey('recim_gdrive_folder'));
         if (!folderInput) return false; // Not configured
 
         const folderId = extractFolderId(folderInput);
         if (!folderId) return false;
 
-        const scriptUrl = localStorage.getItem('recim_gmail_script_url') || 'https://script.google.com/macros/s/AKfycbzrwE5FXgHuCGMIwiZE34DZChQP4zhvxaicj5eXcXKFw7qrew_jU6dVc2e50VxBQxP6/exec';
+        const scriptUrl = localStorage.getItem(userKey('recim_gdrive_script_url'));
+        if (!scriptUrl) {
+            console.warn('⚠️ Google Drive Sync: URL de Apps Script personal no configurada para este usuario.');
+            return false;
+        }
         
         let accountId = 'default';
         try {

@@ -63,6 +63,8 @@ function renderSettingsPage(container) {
   const currentTheme = settings.colorTheme || 'green';
   const darkMode = settings.darkMode !== false;
   const currentCur = settings.currency || 'usd';
+  const gdriveFolderVal = localStorage.getItem(userKey('recim_gdrive_folder')) || '';
+  const gdriveScriptUrlVal = localStorage.getItem(userKey('recim_gdrive_script_url')) || '';
 
   container.innerHTML = `
     <div class="page-header">
@@ -196,11 +198,25 @@ function renderSettingsPage(container) {
             ${t('set.gdrive_desc')}
           </p>
           
+          <div style="display:flex; gap:8px;">
+            <button class="btn-secondary" style="width:100%; justify-content:center; gap:8px; font-size:0.8rem; padding:8px;" onclick="copyGDriveScriptCode()">
+              <span>${t('set.gdrive_copy_btn')}</span>
+            </button>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label" style="font-size:0.75rem;">${t('set.gdrive_script')}</label>
+            <input id="settings-gdrive-script" type="text" class="form-input" 
+                   placeholder="${t('set.gdrive_script_ph')}" 
+                   value="${gdriveScriptUrlVal}" 
+                   style="width:100%;" />
+          </div>
+
           <div class="form-group" style="margin-bottom:8px;">
             <label class="form-label" style="font-size:0.75rem;">${t('set.gdrive_folder')}</label>
             <input id="settings-gdrive-folder" type="text" class="form-input" 
                    placeholder="${t('set.gdrive_folder_ph')}" 
-                   value="${settings.gdriveFolder || ''}" 
+                   value="${gdriveFolderVal}" 
                    style="width:100%;" />
           </div>
 
@@ -326,13 +342,84 @@ function renderSettingsPage(container) {
 
 // ---- Google Drive Backup Handlers ----
 
+const GDRIVE_SCRIPT_CODE = `/**
+ * Script de Google Apps para enviar correos y realizar respaldos en Google Drive de forma segura.
+ * Desplegar desde tu cuenta de Google personal.
+ */
+
+function doPost(e) {
+  try {
+    var data = JSON.parse(e.postData.contents);
+    
+    // CASO A: Respaldo en Google Drive
+    if (data.action === 'backup') {
+      var folderId = data.folderId;
+      var fileName = data.fileName;
+      var content = data.content; // contenido del JSON de respaldo
+      
+      var folder;
+      if (folderId) {
+        folder = DriveApp.getFolderById(folderId);
+      } else {
+        folder = DriveApp.getRootFolder();
+      }
+      
+      // Buscar si ya existe un archivo con ese nombre para actualizarlo y evitar duplicados
+      var files = folder.getFilesByName(fileName);
+      var file;
+      if (files.hasNext()) {
+        file = files.next();
+        file.setContent(content);
+      } else {
+        file = folder.createFile(fileName, content, MimeType.PLAIN_TEXT);
+      }
+      
+      return ContentService.createTextOutput(JSON.stringify({ 
+        status: "success", 
+        message: "Respaldo guardado exitosamente en Google Drive.",
+        fileUrl: file.getUrl() 
+      }))
+      .setMimeType(ContentService.MimeType.JSON);
+    }
+    
+    // CASO B: Envío de Correo (Verificación y Recuperación)
+    var to = data.to;
+    var subject = data.subject;
+    var htmlBody = data.htmlBody;
+    var textBody = data.textBody;
+    
+    // Envío del correo usando la API oficial de Gmail
+    MailApp.sendEmail({
+      to: to,
+      subject: subject,
+      body: textBody,
+      htmlBody: htmlBody
+    });
+    
+    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+      .setMimeType(ContentService.MimeType.JSON);
+      
+  } catch (error) {
+    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
+      .setMimeType(ContentService.MimeType.JSON);
+  }
+}
+`;
+
+function copyGDriveScriptCode() {
+  navigator.clipboard.writeText(GDRIVE_SCRIPT_CODE).then(() => {
+    showToast(t('toast.gdrive_copied'), 'success');
+  }).catch(() => {
+    showToast('❌ No se pudo copiar automáticamente', 'error');
+  });
+}
+
 function updateGDriveStatusDOM() {
   const el = document.getElementById('gdrive-status-badge');
   if (!el) return;
 
-  const settings = getSettings();
-  const folder = settings.gdriveFolder;
-  const status = settings.gdriveStatus;
+  const folder = localStorage.getItem(userKey('recim_gdrive_folder'));
+  const status = localStorage.getItem(userKey('recim_gdrive_status'));
 
   if (!folder) {
     el.className = 'badge badge--yellow';
@@ -352,21 +439,26 @@ function updateGDriveStatusDOM() {
 async function handleGDriveSave() {
   const folderInput = document.getElementById('settings-gdrive-folder');
   const folderVal = folderInput ? folderInput.value.trim() : '';
+  
+  const scriptInput = document.getElementById('settings-gdrive-script');
+  const scriptVal = scriptInput ? scriptInput.value.trim() : '';
 
   const btn = document.getElementById('btn-test-gdrive');
   const spinner = document.getElementById('gdrive-spinner');
 
   if (!folderVal) {
-    saveSetting('gdriveFolder', '');
-    saveSetting('gdriveStatus', '');
+    localStorage.removeItem(userKey('recim_gdrive_folder'));
+    localStorage.removeItem(userKey('recim_gdrive_script_url'));
+    localStorage.removeItem(userKey('recim_gdrive_status'));
     updateGDriveStatusDOM();
     showToast('⚠️ Dirección de Google Drive eliminada', 'warning');
     return;
   }
 
-  // 1. Guardar ajustes locales temporalmente
-  saveSetting('gdriveFolder', folderVal);
-  saveSetting('gdriveStatus', 'pending');
+  // 1. Guardar ajustes locales temporalmente de forma aislada
+  localStorage.setItem(userKey('recim_gdrive_folder'), folderVal);
+  localStorage.setItem(userKey('recim_gdrive_script_url'), scriptVal);
+  localStorage.setItem(userKey('recim_gdrive_status'), 'pending');
   updateGDriveStatusDOM();
 
   // 2. Mostrar spinner e indicar carga
@@ -400,10 +492,10 @@ async function handleGDriveSave() {
       const success = await window.syncPushGDrive(dataToSync);
       
       if (success) {
-        saveSetting('gdriveStatus', 'success');
+        localStorage.setItem(userKey('recim_gdrive_status'), 'success');
         showToast(t('toast.gdrive_success'), 'success');
       } else {
-        saveSetting('gdriveStatus', 'error');
+        localStorage.setItem(userKey('recim_gdrive_status'), 'error');
         showToast(t('toast.gdrive_error') + 'Verifica Apps Script', 'error');
       }
     } else {
@@ -411,7 +503,7 @@ async function handleGDriveSave() {
     }
   } catch (err) {
     console.error('Error saving Google Drive settings:', err);
-    saveSetting('gdriveStatus', 'error');
+    localStorage.setItem(userKey('recim_gdrive_status'), 'error');
     showToast(t('toast.gdrive_error') + err.message, 'error');
   } finally {
     if (btn) btn.disabled = false;
