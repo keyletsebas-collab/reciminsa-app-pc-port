@@ -117,7 +117,6 @@ function renderSettingsPage(container) {
           <button class="btn-danger" style="width:100%;justify-content:center;" onclick="handleLogout()">🚪 Cerrar sesión</button>
         </div>
       </div>
-
       <!-- ===== APARIENCIA ===== -->
       <div class="card card--elevated settings-section">
         <h3 class="settings-section-title">${t('set.appearance')}</h3>

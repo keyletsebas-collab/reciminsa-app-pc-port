@@ -275,3 +275,92 @@
     border: 1px solid rgba(239, 68, 68, 0.25);
     border-radius: var(--r-sm);
 }
+
+/* Forgot Password Styles */
+.form-forgot-link-wrapper {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: -6px;
+    margin-bottom: 2px;
+}
+
+.forgot-link {
+    font-size: 0.82rem;
+    color: var(--clr-primary);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.forgot-link:hover {
+    color: #4ade80;
+    text-shadow: 0 0 10px rgba(34, 197, 94, 0.3);
+    text-decoration: underline;
+}
+
+.auth-form-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #fff;
+    text-align: center;
+    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+}
+
+.auth-step-description {
+    font-size: 0.82rem;
+    color: var(--clr-text-muted);
+    text-align: center;
+    line-height: 1.5;
+    margin-bottom: var(--sp-md);
+}
+
+.text-center-input {
+    text-align: center;
+    font-size: 1.4rem;
+    font-weight: 700;
+    letter-spacing: 0.5em;
+    padding-left: 0.5em; /* Balance out letter-spacing */
+    background: rgba(255, 255, 255, 0.04) !important;
+    border: 1px dashed rgba(34, 197, 94, 0.3) !important;
+    color: #4ade80 !important;
+}
+
+.text-center-input::placeholder {
+    letter-spacing: normal;
+}
+
+.form-actions-back {
+    margin-top: var(--sp-sm);
+}
+
+.back-link {
+    font-size: 0.85rem;
+    color: var(--clr-text-muted);
+    text-decoration: none;
+    font-weight: 500;
+    transition: var(--transition);
+    display: inline-block;
+    padding: 6px 12px;
+    border-radius: var(--r-sm);
+}
+
+.back-link:hover {
+    color: #fff;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.auth-step-container {
+    animation: stepEnter 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes stepEnter {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}

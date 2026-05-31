@@ -82,6 +82,9 @@
             <button type="button" class="password-toggle" onclick="togglePassword('login-password', this)">👁</button>
           </div>
         </div>
+        <div class="form-forgot-link-wrapper">
+          <a href="#" class="forgot-link" onclick="showForgotPasswordForm(event)">¿Olvidaste tu contraseña?</a>
+        </div>
         <p class="auth-error hidden" id="login-error"></p>
         <button type="submit" class="btn-primary" id="login-btn">
           <span>Iniciar Sesión</span>
@@ -112,6 +115,60 @@
           <span>Crear Cuenta</span>
           <div class="btn-spinner hidden"></div>
         </button>
+      </form>
+
+      <!-- Forgot Password Form -->
+      <form id="form-forgot" class="auth-form hidden" onsubmit="handleForgotPassword(event)">
+        <h3 class="auth-form-title">Recuperar Contraseña</h3>
+        
+        <!-- Step 1: Request Code -->
+        <div id="forgot-step-email" class="auth-step-container">
+          <p class="auth-step-description">Introduce tu correo electrónico. Te enviaremos un código de verificación de 6 dígitos para restablecer tu contraseña.</p>
+          <div class="form-group">
+            <label class="form-label">Correo electrónico</label>
+            <input id="forgot-email" type="email" class="form-input" placeholder="correo@ejemplo.com" required />
+          </div>
+          <p class="auth-error hidden" id="forgot-email-error"></p>
+          <button type="submit" class="btn-primary" id="forgot-send-btn">
+            <span>Enviar Código por Gmail</span>
+            <div class="btn-spinner hidden"></div>
+          </button>
+        </div>
+
+        <!-- Step 2: Verify Code -->
+        <div id="forgot-step-code" class="auth-step-container hidden">
+          <p class="auth-step-description">Hemos enviado un código a tu correo electrónico. Por favor introdúcelo a continuación para continuar.</p>
+          <div class="form-group">
+            <label class="form-label">Código de verificación</label>
+            <input id="forgot-code" type="text" class="form-input text-center-input" placeholder="••••••" maxlength="6" />
+          </div>
+          <p class="auth-error hidden" id="forgot-code-error"></p>
+          <button type="button" class="btn-primary" id="forgot-verify-btn" onclick="handleVerifyCode(event)">
+            <span>Verificar Código</span>
+            <div class="btn-spinner hidden"></div>
+          </button>
+        </div>
+
+        <!-- Step 3: New Password -->
+        <div id="forgot-step-reset" class="auth-step-container hidden">
+          <p class="auth-step-description">Código verificado con éxito. Ingresa tu nueva contraseña para actualizar tu cuenta.</p>
+          <div class="form-group">
+            <label class="form-label">Nueva Contraseña</label>
+            <div class="input-password-wrap">
+              <input id="forgot-new-password" type="password" class="form-input" placeholder="Mínimo 6 caracteres" minlength="6" />
+              <button type="button" class="password-toggle" onclick="togglePassword('forgot-new-password', this)">👁</button>
+            </div>
+          </div>
+          <p class="auth-error hidden" id="forgot-reset-error"></p>
+          <button type="button" class="btn-primary" id="forgot-reset-btn" onclick="handleResetPassword(event)">
+            <span>Restablecer Contraseña</span>
+            <div class="btn-spinner hidden"></div>
+          </button>
+        </div>
+
+        <div class="form-actions-back text-center">
+          <a href="#" class="back-link" onclick="backToLogin(event)">← Volver al inicio de sesión</a>
+        </div>
       </form>
     </div>
   </div>
