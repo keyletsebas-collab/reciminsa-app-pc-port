@@ -117,6 +117,25 @@
         </button>
       </form>
 
+      <!-- Signup Verification Step -->
+      <form id="signup-step-verify" class="auth-form hidden" onsubmit="event.preventDefault();">
+        <h3 class="auth-form-title">Verifica tu Cuenta</h3>
+        <p class="auth-step-description">Hemos enviado un código de activación de 6 dígitos a tu correo electrónico para activar tu registro en Reciminsa.</p>
+        <div class="form-group">
+          <label class="form-label">Código de verificación</label>
+          <input id="signup-verification-code" type="text" class="form-input text-center-input" placeholder="••••••" maxlength="6" 
+                 onkeydown="if(event.key==='Enter') { event.preventDefault(); handleVerifySignup(event); }" />
+        </div>
+        <p class="auth-error hidden" id="signup-verify-error"></p>
+        <button type="button" class="btn-primary" id="signup-verify-btn" onclick="handleVerifySignup(event)">
+          <span>Confirmar Código y Activar Cuenta</span>
+          <div class="btn-spinner hidden"></div>
+        </button>
+        <div class="form-actions-back text-center">
+          <a href="#" class="back-link" onclick="cancelSignupVerification(event)">← Volver al registro</a>
+        </div>
+      </form>
+
       <!-- Forgot Password Form -->
       <form id="form-forgot" class="auth-form hidden" onsubmit="event.preventDefault();">
         <h3 class="auth-form-title">Recuperar Contraseña</h3>
