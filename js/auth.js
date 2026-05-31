@@ -110,6 +110,13 @@ async function handleLogin(evt) {
         return;
       }
 
+      if (data.family_id === 'BLOCKED') {
+        errorEl.textContent = 'Acceso denegado: tu cuenta ha sido bloqueada por el administrador.';
+        errorEl.classList.remove('hidden');
+        resetBtn();
+        return;
+      }
+
       if (data.password !== btoa(password)) {
         errorEl.textContent = 'Contraseña incorrecta.';
         errorEl.classList.remove('hidden');

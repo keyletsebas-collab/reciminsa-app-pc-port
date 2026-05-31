@@ -10,7 +10,7 @@ function copyDir(src, dest) {
         let destPath = path.join(dest, entry.name);
 
         // Omitir carpetas de dependencias y la carpeta destino
-        if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'android' || entry.name === 'www') {
+        if (entry.name === 'node_modules' || entry.name === '.git' || entry.name === 'android' || entry.name === 'www' || entry.name === 'landing 2') {
             continue;
         }
 

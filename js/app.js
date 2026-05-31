@@ -149,6 +149,26 @@ document.addEventListener('DOMContentLoaded', () => {
     if (session) {
         try {
             const user = JSON.parse(session);
+            
+            // Verificación asíncrona de bloqueo en Supabase
+            if (user && user.accountId && typeof isSupabaseActive !== 'undefined' && isSupabaseActive && supabaseClient) {
+                supabaseClient
+                    .from('profiles')
+                    .select('family_id')
+                    .eq('id', user.accountId)
+                    .maybeSingle()
+                    .then(({ data, error }) => {
+                        if (!error && data && data.family_id === 'BLOCKED') {
+                            localStorage.removeItem('recim_session');
+                            showToast('🔴 Tu cuenta ha sido bloqueada por el administrador.', 'error');
+                            setTimeout(() => {
+                                window.location.reload();
+                            }, 1500);
+                        }
+                    })
+                    .catch(err => console.error('Error checking block status:', err));
+            }
+            
             initApp(user);
         } catch (_) {
             localStorage.removeItem('recim_session');
