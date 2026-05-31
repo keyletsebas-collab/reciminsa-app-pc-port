@@ -1,6 +1,7 @@
 /* =============================================
    AUTH.JS – Login / Signup logic
    Multi-user: cada credencial = cuenta separada
+   Force rebuild: 2026-05-31
    ============================================= */
 
 // ---- Per-user storage key helper ----
