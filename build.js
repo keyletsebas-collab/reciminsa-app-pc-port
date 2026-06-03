@@ -29,7 +29,7 @@ if (fs.existsSync('www')) {
 fs.mkdirSync('www', { recursive: true });
 
 console.log("📦 Copiando archivos web a 'www'...");
-const filesToCopy = ['index.html', 'service-worker.js', 'manifest.json', 'icon-192.png', 'icon-512.png'];
+const filesToCopy = ['index.html', 'service-worker.js', 'manifest.json', 'icon-192.png', 'icon-512.png', 'logo-white-lines.png', 'logo-no-white-lines.png'];
 filesToCopy.forEach(file => {
     if (fs.existsSync(file)) {
         fs.copyFileSync(file, path.join('www', file));
