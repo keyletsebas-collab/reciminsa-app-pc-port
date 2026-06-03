@@ -10,19 +10,22 @@ function saveClients(clients) {
   localStorage.setItem(userKey('recim_clients'), JSON.stringify(clients));
 }
 
-function addClient(name, nit, address, contact) {
+function addClient(name, nit, address, contact, type = 'local') {
   const clients = getClients();
   const id = `cli-${Date.now()}`;
-  clients.push({ id, name, nit, address, contact });
+  clients.push({ id, name, nit, address, contact, type });
   saveClients(clients);
-  showToast(t('toast.cli_add') || '✅ Cliente creado', 'success');
+  showToast(type === 'empresa' ? '✅ Empresa creada' : (t('toast.cli_add') || '✅ Cliente creado'), 'success');
   return true;
 }
 
 function deleteClient(id) {
-  const clients = getClients().filter(c => c.id !== id);
-  saveClients(clients);
-  showToast(t('toast.cli_del') || '🗑 Cliente eliminado', 'success');
+  const clients = getClients();
+  const client = clients.find(c => c.id === id);
+  const isEmp = client && client.type === 'empresa';
+  const filtered = clients.filter(c => c.id !== id);
+  saveClients(filtered);
+  showToast(isEmp ? '🗑 Empresa eliminada' : (t('toast.cli_del') || '🗑 Cliente eliminado'), 'success');
 }
 
 function updateClient(id, name, nit, address, contact) {
@@ -31,7 +34,7 @@ function updateClient(id, name, nit, address, contact) {
   if (idx === -1) return;
   clients[idx] = { ...clients[idx], name, nit, address, contact };
   saveClients(clients);
-  showToast(t('toast.cli_upd') || '✅ Cliente actualizado', 'success');
+  showToast(t('toast.cli_upd') || '✅ Registro actualizado', 'success');
 }
 
 // =============================================
@@ -39,7 +42,8 @@ function updateClient(id, name, nit, address, contact) {
 // =============================================
 
 function renderClientesPage(container, isEmpresaMode = false) {
-  const clients = getClients();
+  const allClients = getClients();
+  const clients = allClients.filter(c => isEmpresaMode ? c.type === 'empresa' : (!c.type || c.type === 'local'));
   const titleKey = isEmpresaMode ? 'cli.empresas_title' : 'cli.title';
   const subtitleKey = isEmpresaMode ? 'cli.empresas_subtitle' : 'cli.subtitle';
 
@@ -86,7 +90,7 @@ function renderClientesPage(container, isEmpresaMode = false) {
             <span class="badge badge--green" style="margin-left:8px;">${clients.length}</span>
           </h3>
           <div id="clients-list">
-            ${renderClientsList(clients)}
+            ${renderClientsList(clients, isEmpresaMode)}
           </div>
         </div>
       </div>
@@ -94,9 +98,9 @@ function renderClientesPage(container, isEmpresaMode = false) {
   `;
 }
 
-function renderClientsList(clients) {
+function renderClientsList(clients, isEmpresaMode = false) {
   if (clients.length === 0) {
-    return `<p style="color:var(--clr-text-muted);font-size:0.85rem;">${t('cli.no_clients') || 'Sin clientes registrados aún.'}</p>`;
+    return `<p style="color:var(--clr-text-muted);font-size:0.85rem;">${isEmpresaMode ? 'Sin empresas registradas aún.' : (t('cli.no_clients') || 'Sin clientes registrados aún.')}</p>`;
   }
 
   return clients.map(c => `
@@ -111,11 +115,11 @@ function renderClientsList(clients) {
       </div>
       <div style="display:flex;gap:6px;">
         <button class="btn-secondary" style="padding:5px 10px;font-size:0.8rem;"
-                onclick="showEditClientRow('${c.id}', '${c.name.replace(/'/g, "\\'")}', '${(c.nit || '').replace(/'/g, "\\'")}', '${(c.address || '').replace(/'/g, "\\'")}', '${(c.contact || '').replace(/'/g, "\\'")}')">
+                onclick="showEditClientRow('${c.id}', '${c.name.replace(/'/g, "\\'")}', '${(c.nit || '').replace(/'/g, "\\'")}', '${(c.address || '').replace(/'/g, "\\'")}', '${(c.contact || '').replace(/'/g, "\\'")}', ${isEmpresaMode})">
           ✏️
         </button>
         <button class="btn-danger" style="padding:5px 10px;font-size:0.8rem;"
-                onclick="handleDeleteClient('${c.id}')">
+                onclick="handleDeleteClient('${c.id}', ${isEmpresaMode})">
           🗑
         </button>
       </div>
@@ -123,7 +127,7 @@ function renderClientsList(clients) {
 }
 
 // ---- Inline edit row ----
-function showEditClientRow(id, currentName, currentNit, currentAddress, currentContact) {
+function showEditClientRow(id, currentName, currentNit, currentAddress, currentContact, isEmpresaMode = false) {
   const row = document.getElementById(`cli-row-${id}`);
   if (!row) return;
 
@@ -136,15 +140,15 @@ function showEditClientRow(id, currentName, currentNit, currentAddress, currentC
       
       <div style="display:flex;gap:6px;margin-top:4px;">
         <button class="btn-primary" style="padding:6px 14px;font-size:0.82rem;"
-                onclick="saveEditClientRow('${id}')">✓ Guardar</button>
+                onclick="saveEditClientRow('${id}', ${isEmpresaMode})">✓ Guardar</button>
         <button class="btn-secondary" style="padding:6px 10px;font-size:0.82rem;"
-                onclick="cancelEditClientRow()">✕</button>
+                onclick="cancelEditClientRow(${isEmpresaMode})">✕</button>
       </div>
     </div>
   `;
 }
 
-function saveEditClientRow(id) {
+function saveEditClientRow(id, isEmpresaMode = false) {
   const nameEl = document.getElementById(`edit-cli-name-${id}`);
   const nitEl = document.getElementById(`edit-cli-nit-${id}`);
   const addressEl = document.getElementById(`edit-cli-address-${id}`);
@@ -158,11 +162,11 @@ function saveEditClientRow(id) {
   if (!name) { showToast(t('err.fill_fields') || '❌ Completa los campos requeridos', 'error'); return; }
 
   updateClient(id, name, nit, address, contact);
-  refreshClientsList();
+  refreshClientsList(isEmpresaMode);
 }
 
-function cancelEditClientRow() {
-  refreshClientsList();
+function cancelEditClientRow(isEmpresaMode = false) {
+  refreshClientsList(isEmpresaMode);
 }
 
 // ---- Handlers ----
@@ -174,27 +178,29 @@ function handleAddClient(isEmpresaMode = false) {
 
   if (!name) { showToast(t('err.fill_fields') || '❌ Completa los campos requeridos', 'error'); return; }
   
-  if (addClient(name, nit, address, contact)) {
+  const type = isEmpresaMode ? 'empresa' : 'local';
+  if (addClient(name, nit, address, contact, type)) {
     document.getElementById('cli-name').value = '';
     document.getElementById('cli-nit').value = '';
     document.getElementById('cli-address').value = '';
     document.getElementById('cli-contact').value = '';
-    refreshClientsList();
+    refreshClientsList(isEmpresaMode);
   }
 }
 
-function handleDeleteClient(id) {
-  if (!confirm('¿Eliminar este cliente?')) return;
+function handleDeleteClient(id, isEmpresaMode = false) {
+  if (!confirm(isEmpresaMode ? '¿Eliminar esta empresa?' : '¿Eliminar este cliente?')) return;
   deleteClient(id);
-  refreshClientsList();
+  refreshClientsList(isEmpresaMode);
 }
 
-function refreshClientsList() {
+function refreshClientsList(isEmpresaMode = false) {
   const listEl = document.getElementById('clients-list');
   if (listEl) {
-    const clients = getClients();
+    const allClients = getClients();
+    const clients = allClients.filter(c => isEmpresaMode ? c.type === 'empresa' : (!c.type || c.type === 'local'));
     const header = listEl.closest('.card')?.querySelector('h3 .badge');
     if (header) header.textContent = clients.length;
-    listEl.innerHTML = renderClientsList(clients);
+    listEl.innerHTML = renderClientsList(clients, isEmpresaMode);
   }
 }

@@ -145,7 +145,10 @@ function initClientSelect(type) {
   const select = document.getElementById(`fac-client-select-${type}`);
   if (!select) return;
   const clients = JSON.parse(localStorage.getItem(userKey('recim_clients')) || '[]');
-  clients.forEach(c => {
+  const filtered = clients.filter(c => type === 'empresa' ? c.type === 'empresa' : (!c.type || c.type === 'local'));
+  
+  select.innerHTML = '<option value="">-- Escribir datos manualmente --</option>';
+  filtered.forEach(c => {
     const opt = document.createElement('option');
     opt.value = c.id;
     opt.textContent = `${c.name} ${c.nit ? `(${c.nit})` : ''}`;
@@ -257,6 +260,24 @@ async function saveFactura(type) {
   if (items.length === 0) {
     showToast('❌ Agrega al menos un artículo con descripción y precio', 'error');
     return;
+  }
+
+  // Validar correspondencia de tipo de cliente y tipo de factura
+  const clientSelect = document.getElementById(`fac-client-select-${type}`);
+  const selectedClientId = clientSelect ? clientSelect.value : '';
+  if (selectedClientId) {
+    const clients = JSON.parse(localStorage.getItem(userKey('recim_clients')) || '[]');
+    const found = clients.find(c => c.id === selectedClientId);
+    if (found) {
+      if (type === 'empresa' && found.type !== 'empresa') {
+        showToast('❌ El cliente seleccionado no es de tipo Empresa', 'error');
+        return;
+      }
+      if (type === 'local' && found.type === 'empresa') {
+        showToast('❌ El cliente seleccionado no es de tipo Local', 'error');
+        return;
+      }
+    }
   }
 
   const company = document.getElementById(`fac-name-${type}`).value.trim() || 'Cliente General';
