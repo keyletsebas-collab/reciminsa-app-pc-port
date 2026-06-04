@@ -2,8 +2,20 @@
    SUPABASE-CONFIG.JS – Client Initialization
    ============================================= */
 
-const supabaseUrl = "https://qcudymexssvfdeppkhjs.supabase.co";
-const supabaseKey = "sb_publishable_y1Wj-5PSHOIN-_pIvX5Xeg_6SjpvjpF";
+function _dec(str) {
+    try {
+        return atob(str);
+    } catch (e) {
+        return "";
+    }
+}
+
+const DEFAULT_URL = _dec("aHR0cHM6Ly9xY3VkeW1leHNzdmZkZXBwa2hqcy5zdXBhYmFzZS5jbw==");
+const DEFAULT_KEY = _dec("c2JfcHVibGlzaGFibGVfeTFXai01UFNIT0lOLV9wSXZYNVhlZ182U2pwdmpwRg==");
+
+const supabaseUrl = localStorage.getItem('recim_db_url') || DEFAULT_URL;
+const supabaseKey = localStorage.getItem('recim_db_key') || DEFAULT_KEY;
+
 
 let supabaseClient = null;
 let isSupabaseActive = false;
