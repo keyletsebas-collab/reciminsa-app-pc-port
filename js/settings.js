@@ -259,13 +259,6 @@ function renderSettingsPage(container) {
         </div>
       </div>
 
-      <!-- ===== CONFIGURACIÓN DE BASE DE DATOS ===== -->
-      <div class="card card--elevated settings-section">
-        <h3 class="settings-section-title">${t('set.db_title')}</h3>
-        <div id="settings-db-container" style="display:flex; flex-direction:column; gap:12px;">
-          <!-- Content will be rendered dynamically by renderDatabaseConfigSection() -->
-        </div>
-      </div>
 
       <!-- ===== INFORMACIÓN ===== -->
       <div class="card card--elevated settings-section" style="grid-column: span 2;">
@@ -340,8 +333,6 @@ function renderSettingsPage(container) {
   // Update Google Drive status badge
   setTimeout(() => updateGDriveStatusDOM(), 0);
 
-  // Render Database Config Section
-  setTimeout(() => renderDatabaseConfigSection(), 0);
 }
 
 // ---- Google Drive Backup Handlers ----
@@ -1225,104 +1216,4 @@ async function handleLeaveFamily() {
   renderFamilySection();
 }
 
-// =============================================
-// DATABASE CONNECTION CONFIGURATION (SUPABASE)
-// =============================================
 
-function renderDatabaseConfigSection() {
-  const container = document.getElementById('settings-db-container');
-  if (!container) return;
-
-  const customUrl = localStorage.getItem('recim_db_url') || '';
-  const customKey = localStorage.getItem('recim_db_key') || '';
-
-  const displayUrl = customUrl || (typeof DEFAULT_URL !== 'undefined' ? DEFAULT_URL : 'https://qcudymexssvfdeppkhjs.supabase.co');
-  const displayKey = customKey || (typeof DEFAULT_KEY !== 'undefined' ? DEFAULT_KEY : 'sb_publishable_y1Wj-5PSHOIN-_pIvX5Xeg_6SjpvjpF');
-
-  container.innerHTML = `
-    <div style="display:flex; flex-direction:column; gap:12px;">
-      <p style="font-size:0.8rem; color:var(--clr-text-muted);">
-        Modifica estos campos solo si deseas conectar la app a tu propia base de datos de Supabase.
-      </p>
-      
-      <div class="form-group">
-        <label class="form-label" style="font-size:0.75rem; font-weight:600; margin-bottom:4px;">${t('set.db_url')}</label>
-        <div class="input-password-wrap" style="position:relative; display:flex;">
-          <input id="db-config-url" type="password" class="form-input" value="${displayUrl}" style="flex:1; font-family:monospace; font-size:0.82rem;" />
-          <button type="button" class="password-toggle" onclick="toggleDbFieldVisibility('db-config-url', this)" style="background:none; border:none; padding:0 8px; color:var(--clr-text-muted); cursor:pointer;">👁</button>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" style="font-size:0.75rem; font-weight:600; margin-bottom:4px;">${t('set.db_key')}</label>
-        <div class="input-password-wrap" style="position:relative; display:flex;">
-          <input id="db-config-key" type="password" class="form-input" value="${displayKey}" style="flex:1; font-family:monospace; font-size:0.82rem;" />
-          <button type="button" class="password-toggle" onclick="toggleDbFieldVisibility('db-config-key', this)" style="background:none; border:none; padding:0 8px; color:var(--clr-text-muted); cursor:pointer;">👁</button>
-        </div>
-      </div>
-
-      <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
-        <button class="btn-primary" style="width:100%; justify-content:center; padding:10px; font-weight:600;" onclick="saveDatabaseConfig()">
-          ${t('set.db_save')}
-        </button>
-        <button class="btn-secondary" style="width:100%; justify-content:center; font-size:0.8rem; padding:8px;" onclick="resetDatabaseConfig()">
-          ${t('set.db_reset')}
-        </button>
-      </div>
-    </div>
-  `;
-}
-
-function toggleDbFieldVisibility(id, btn) {
-  const input = document.getElementById(id);
-  if (!input) return;
-  if (input.type === 'password') {
-    input.type = 'text';
-    btn.textContent = '🙈';
-  } else {
-    input.type = 'password';
-    btn.textContent = '👁';
-  }
-}
-
-function saveDatabaseConfig() {
-  const urlInput = document.getElementById('db-config-url');
-  const keyInput = document.getElementById('db-config-key');
-  if (!urlInput || !keyInput) return;
-
-  const urlVal = urlInput.value.trim();
-  const keyVal = keyInput.value.trim();
-
-  if (!urlVal || !keyVal) {
-    showToast('⚠️ Ambos campos son obligatorios.', 'error');
-    return;
-  }
-
-  if (confirm('¿Estás seguro de que deseas guardar las nuevas credenciales de base de datos? La aplicación se reiniciará para conectarse con la nueva base de datos.')) {
-    localStorage.setItem('recim_db_url', urlVal);
-    localStorage.setItem('recim_db_key', keyVal);
-    
-    localStorage.removeItem('recim_session');
-    
-    showToast(t('toast.db_saved'), 'success');
-    
-    setTimeout(() => {
-      location.reload();
-    }, 1500);
-  }
-}
-
-function resetDatabaseConfig() {
-  if (confirm('¿Restaurar las credenciales por defecto de Supabase? La aplicación se reiniciará.')) {
-    localStorage.removeItem('recim_db_url');
-    localStorage.removeItem('recim_db_key');
-    
-    localStorage.removeItem('recim_session');
-    
-    showToast(t('toast.db_reset'), 'success');
-    
-    setTimeout(() => {
-      location.reload();
-    }, 1500);
-  }
-}
