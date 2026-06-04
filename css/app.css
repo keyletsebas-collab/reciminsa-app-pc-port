@@ -680,6 +680,11 @@
         padding-bottom: calc(64px + var(--safe-area-bottom));
     }
 
+    .topbar {
+        height: calc(64px + var(--safe-area-top)) !important;
+        padding-top: var(--safe-area-top) !important;
+    }
+
     .topbar-menu {
         display: flex;
     }
@@ -1068,3 +1073,99 @@
     border-bottom: 1px solid var(--clr-border);
 }
 @keyframes textShine { to { background-position: 200% center; } }
+
+/* =============================================
+   MOBILE & ANDROID OPTIMIZATIONS
+   ============================================= */
+
+/* Limit max width and ensure word-wrapping for long settings values (e.g. Supabase Account UUID) */
+.settings-item-value {
+    word-break: break-all;
+    text-align: right;
+    max-width: 60%;
+}
+
+/* Cache management buttons layout on mobile (stacked nicely or 2-column) */
+.cache-btn-group {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.cache-btn-group button {
+    flex: 1;
+    font-size: 0.8rem !important;
+    justify-content: center;
+    padding: 10px 8px;
+    white-space: nowrap;
+}
+
+@media (max-width: 480px) {
+    /* Optimize settings sections padding to maximize horizontal space */
+    .card.settings-section {
+        padding: 14px !important;
+        border-radius: var(--r-md) !important;
+    }
+    
+    .settings-item {
+        gap: 6px;
+        padding: 8px 0;
+    }
+    
+    /* Make language and currency options fit perfectly in columns */
+    .lang-options {
+        display: grid !important;
+        grid-template-columns: repeat(3, 1fr) !important;
+        width: 100%;
+        gap: 6px;
+    }
+    
+    .lang-btn {
+        padding: 8px 4px !important;
+        font-size: 0.74rem !important;
+        text-align: center;
+        width: 100%;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        white-space: nowrap;
+    }
+
+    /* Clear Cache Buttons: 2-column + full-width danger button */
+    .cache-btn-group {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px;
+    }
+    
+    .cache-btn-group button {
+        width: 100%;
+    }
+    
+    .cache-btn-group button:last-child {
+        grid-column: span 2;
+    }
+
+    /* Scaling profile details card to fit screen */
+    .settings-profile-card {
+        padding: 10px !important;
+        gap: 10px !important;
+    }
+    
+    .settings-avatar {
+        width: 42px !important;
+        height: 42px !important;
+        font-size: 1.1rem !important;
+    }
+    
+    .settings-profile-name {
+        font-size: 0.9rem !important;
+    }
+
+    /* Shrink family code container for narrow devices */
+    #family-code-text {
+        font-size: 1.1rem !important;
+    }
+}
