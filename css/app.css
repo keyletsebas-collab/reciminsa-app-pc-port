@@ -208,9 +208,17 @@
 .sidebar-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(2px);
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
     z-index: 150;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition);
+}
+
+.sidebar-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
 }
 
 /* ---- MAIN CONTENT ---- */
@@ -581,15 +589,86 @@
     display: none;
 }
 
+/* ---- BOTTOM NAVIGATION BAR (Mobile Only) ---- */
+.bottom-nav {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: calc(64px + var(--safe-area-bottom));
+    background: var(--clr-surface);
+    border-top: 1px solid var(--clr-border);
+    justify-content: space-around;
+    align-items: center;
+    z-index: 150;
+    padding-bottom: var(--safe-area-bottom);
+    box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.bottom-nav-item {
+    flex: 1;
+    height: 100%;
+    background: none;
+    border: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 2px;
+    color: var(--clr-text-secondary);
+    cursor: pointer;
+    transition: var(--transition);
+    font-family: inherit;
+    padding: 6px 0;
+}
+
+.bottom-nav-item:hover {
+    color: var(--clr-text);
+}
+
+.bottom-nav-icon {
+    font-size: 1.3rem;
+    transition: var(--transition);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 28px;
+    border-radius: 14px;
+}
+
+.bottom-nav-item.active .bottom-nav-icon {
+    background: var(--clr-primary-glow);
+    color: var(--clr-primary-light);
+}
+
+.bottom-nav-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    transition: var(--transition);
+}
+
+.bottom-nav-item.active .bottom-nav-label {
+    color: var(--clr-primary-light);
+    font-weight: 700;
+}
+
 /* ---- RESPONSIVE ---- */
 @media (max-width: 768px) {
     .sidebar {
         transform: translateX(-100%);
+        border-right: none;
+        border-radius: 0 24px 24px 0;
     }
 
     .sidebar.open {
         transform: translateX(0);
-        box-shadow: var(--shadow-lg);
+        box-shadow: 8px 0 24px rgba(0, 0, 0, 0.4);
+    }
+
+    .sidebar-header {
+        padding-top: calc(var(--sp-lg) + var(--safe-area-top));
     }
 
     .sidebar-close {
@@ -598,9 +677,14 @@
 
     .main-content {
         margin-left: 0;
+        padding-bottom: calc(64px + var(--safe-area-bottom));
     }
 
     .topbar-menu {
+        display: flex;
+    }
+
+    .bottom-nav {
         display: flex;
     }
 
@@ -617,11 +701,6 @@
         display: none;
     }
 
-    /* Restrict navigation on mobile: only Ingresos, Egresos, Bitacoras, Historial, Facturas, Clientes and Empresas */
-    .sidebar-link:not([data-page="ingresos"]):not([data-page="egresos"]):not([data-page="bitacoras"]):not([data-page="historial"]):not([data-page="facturas"]):not([data-page="clientes"]):not([data-page="empresas"]) {
-        display: none;
-    }
-
     .version-indicator-mobile {
         display: inline-block;
         font-size: 0.72rem;
@@ -635,6 +714,14 @@
         vertical-align: middle;
         text-transform: none;
         letter-spacing: normal;
+    }
+}
+
+/* Force 2-column inline styles to stack on mobile */
+@media (max-width: 600px) {
+    div[style*="grid-template-columns"],
+    .form-row {
+        grid-template-columns: 1fr !important;
     }
 }
 

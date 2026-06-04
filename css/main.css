@@ -53,6 +53,10 @@
   /* Transitions */
   --transition: 0.22s cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* Safe Areas */
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 *,
@@ -581,4 +585,15 @@ body {
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--clr-border-strong);
+}
+
+/* Responsive adjustments for mobile screens */
+@media (max-width: 480px) {
+  .card {
+    padding: var(--sp-md) !important;
+    border-radius: var(--r-md) !important;
+  }
+  .page {
+    padding: var(--sp-md) var(--sp-sm) !important;
+  }
 }

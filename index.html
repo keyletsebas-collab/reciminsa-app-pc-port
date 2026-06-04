@@ -3,7 +3,7 @@
 
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
   <title>Reciminsa – Gestión de Reciclaje</title>
   <meta name="description"
     content="Aplicación de conteo y gestión de materiales reciclables para empresas y centros de acopio." />
@@ -252,7 +252,7 @@
     </aside>
 
     <!-- Overlay -->
-    <div id="sidebar-overlay" class="sidebar-overlay hidden" onclick="toggleSidebar()"></div>
+    <div id="sidebar-overlay" class="sidebar-overlay" onclick="toggleSidebar()"></div>
 
     <!-- Main content -->
     <main class="main-content">
@@ -274,6 +274,30 @@
       <div id="page-egresos" class="page hidden"></div>
       <div id="page-ajustes" class="page hidden"></div>
     </main>
+
+    <!-- Bottom Navigation Bar (Mobile only) -->
+    <nav id="bottom-nav" class="bottom-nav">
+      <button class="bottom-nav-item" data-page="historial" onclick="navigate('historial')">
+        <span class="bottom-nav-icon">📋</span>
+        <span class="bottom-nav-label">Historial</span>
+      </button>
+      <button class="bottom-nav-item" data-page="bitacoras" onclick="navigate('bitacoras')">
+        <span class="bottom-nav-icon">🚛</span>
+        <span class="bottom-nav-label">Bitácoras</span>
+      </button>
+      <button class="bottom-nav-item" data-page="facturas" onclick="navigate('facturas')">
+        <span class="bottom-nav-icon">🧾</span>
+        <span class="bottom-nav-label">Facturas</span>
+      </button>
+      <button class="bottom-nav-item" data-page="ingresos" onclick="navigate('ingresos')">
+        <span class="bottom-nav-icon">📈</span>
+        <span class="bottom-nav-label">Ingresos</span>
+      </button>
+      <button class="bottom-nav-item" onclick="toggleSidebar()">
+        <span class="bottom-nav-icon">☰</span>
+        <span class="bottom-nav-label">Más</span>
+      </button>
+    </nav>
   </div>
 
   <!-- Scripts (External Libraries) -->
