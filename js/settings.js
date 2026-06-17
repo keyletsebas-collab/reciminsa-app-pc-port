@@ -365,13 +365,10 @@ function doPost(e) {
         fileName
       );
 
-      // Si ya existe un archivo con ese nombre, actualizarlo (evita duplicados)
+      // Si ya existe un archivo con ese nombre, mandarlo a la papelera (evita duplicados)
       var existing = folder.getFilesByName(fileName);
-      if (existing.hasNext()) {
-        existing.next().setContent(blob.getDataAsString());
-        // Para binarios usamos trashed + nuevo archivo
-        existing = folder.getFilesByName(fileName);
-        if (existing.hasNext()) { existing.next().setTrashed(true); }
+      while (existing.hasNext()) {
+        existing.next().setTrashed(true);
       }
       folder.createFile(blob);
 

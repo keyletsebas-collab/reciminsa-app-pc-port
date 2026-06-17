@@ -284,18 +284,21 @@ async function syncPushGDriveExcel(force = false) {
         accountId = session.accountId || 'default';
     } catch (_) {}
 
-    // Helper: build an Excel workbook for a given dataset and return base64 string
+    // Helper: build an Excel workbook for a given set of sheets (name + headers + rows AOA)
     function buildAndEncodeWorkbook(sheets) {
         const wb = XLSX.utils.book_new();
-        sheets.forEach(({ name, data }) => {
-            if (data.length === 0) {
-                // Add an empty sheet with just a header row so the file always exists
-                const ws = XLSX.utils.aoa_to_sheet([['Sin datos']]);
-                XLSX.utils.book_append_sheet(wb, ws, name);
+        sheets.forEach(({ name, headers, rows }) => {
+            let ws;
+            if (rows.length === 0) {
+                ws = XLSX.utils.aoa_to_sheet([headers, ['Sin datos']]);
             } else {
-                const ws = XLSX.utils.json_to_sheet(data);
-                XLSX.utils.book_append_sheet(wb, ws, name);
+                ws = XLSX.utils.aoa_to_sheet([headers, ...rows]);
             }
+            // Apply premium formatting and styling
+            if (typeof formatAndStyleWorksheet === 'function') {
+                formatAndStyleWorksheet(ws);
+            }
+            XLSX.utils.book_append_sheet(wb, ws, name);
         });
         const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
         return wbout;
@@ -307,35 +310,64 @@ async function syncPushGDriveExcel(force = false) {
     const egresos  = JSON.parse(localStorage.getItem(userKey('recim_egresos'))  || '[]');
     const mats     = (typeof getMaterialCodes === 'function') ? getMaterialCodes() : [];
 
-    // Build invoice rows (flatten items)
+    // 1. Map Facturas (AOA with formulas)
+    const invHeaders = [
+        'ID', 'Fecha', 'Cliente', 'Tipo', 'Material', 
+        'Cantidad', 'Unidad', 'Precio Compra', 'Precio Venta', 
+        'Total Compra', 'Total Venta', 'Ganancia', 'Notas'
+    ];
     const invRows = [];
+    let invRowIndex = 2; // Row 1 is headers
     invoices.forEach(inv => {
         (inv.items || []).forEach(item => {
-            invRows.push({
-                ID: inv.id, Fecha: inv.date,
-                Cliente: inv.client || inv.company || '—',
-                Tipo: inv.type || 'basic',
-                Material: item.name || item.desc || '',
-                Cantidad: item.qty || 0, Unidad: item.unit || 'kg',
-                Precio_Compra: item.priceBuy || item.uprice || 0,
-                Precio_Venta: item.priceSell || 0,
-                Subtotal: (item.qty || 0) * (item.priceBuy || item.uprice || 0),
-                Notas: inv.notes || ''
-            });
+            invRows.push([
+                inv.id,
+                inv.date,
+                inv.client || inv.company || '—',
+                inv.type || 'basic',
+                item.name || item.desc || '',
+                item.qty || 0,
+                item.unit || 'kg',
+                item.priceBuy || item.uprice || 0,
+                item.priceSell || 0,
+                { f: `F${invRowIndex}*H${invRowIndex}` }, // J - Total Compra (Fórmula)
+                { f: `F${invRowIndex}*I${invRowIndex}` }, // K - Total Venta (Fórmula)
+                { f: `K${invRowIndex}-J${invRowIndex}` }, // L - Ganancia (Fórmula)
+                inv.notes || ''
+            ]);
+            invRowIndex++;
         });
     });
 
-    const incRows = ingresos.map(i => ({
-        ID: i.id, Fecha: i.date, Concepto: i.concept,
-        Monto: i.amount, Categoria: i.category || 'General'
-    }));
-    const expRows = egresos.map(e => ({
-        ID: e.id, Fecha: e.date, Concepto: e.concept,
-        Monto: e.amount, Categoria: e.category || 'General'
-    }));
-    const matRows = mats.map(m => ({
-        Código: m.id || m.code || '', Nombre: m.name || '', Unidad: m.unit || 'kg'
-    }));
+    // 2. Map Ingresos (AOA)
+    const incHeaders = ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoría', 'Notas'];
+    const incRows = ingresos.map(i => [
+        i.id,
+        i.date,
+        i.concept,
+        i.amount,
+        i.category || 'General',
+        i.notes || ''
+    ]);
+
+    // 3. Map Egresos (AOA)
+    const expHeaders = ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoría', 'Notas'];
+    const expRows = egresos.map(e => [
+        e.id,
+        e.date,
+        e.concept,
+        e.amount,
+        e.category || 'General',
+        e.notes || ''
+    ]);
+
+    // 4. Map Materiales (AOA)
+    const matHeaders = ['Código', 'Nombre', 'Unidad'];
+    const matRows = mats.map(m => [
+        m.id || m.code || '',
+        m.name || '',
+        m.unit || 'kg'
+    ]);
 
     // Format date and time for filename (e.g., YYYY-MM-DD_HH-mm)
     const nowObj = new Date();
@@ -344,22 +376,22 @@ async function syncPushGDriveExcel(force = false) {
     const timePart = pad(nowObj.getHours()) + '-' + pad(nowObj.getMinutes());
     const timestampLabel = `${datePart}_${timePart}`;
 
-    // Define the Excel files to send (Ingresos and Egresos are combined in Finanzas)
+    // Define the Excel files to send
     const excelFiles = [
         {
             fileName: `Reciminsap_Facturas_${accountId}_${timestampLabel}.xlsx`,
-            sheets: [{ name: 'Facturas', data: invRows }]
+            sheets: [{ name: 'Facturas', headers: invHeaders, rows: invRows }]
         },
         {
             fileName: `Reciminsap_Finanzas_${accountId}_${timestampLabel}.xlsx`,
             sheets: [
-                { name: 'Ingresos', data: incRows },
-                { name: 'Egresos', data: expRows }
+                { name: 'Ingresos', headers: incHeaders, rows: incRows },
+                { name: 'Egresos', headers: expHeaders, rows: expRows }
             ]
         },
         {
             fileName: `Reciminsap_Materiales_${accountId}_${timestampLabel}.xlsx`,
-            sheets: [{ name: 'Catálogo_Materiales', data: matRows }]
+            sheets: [{ name: 'Catálogo_Materiales', headers: matHeaders, rows: matRows }]
         }
     ];
 

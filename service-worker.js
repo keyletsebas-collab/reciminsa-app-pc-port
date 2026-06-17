@@ -1,9 +1,9 @@
 // =============================================
 // SERVICE WORKER – Reciminsap PWA
-// v13: Add welcome file and timestamped 2-hour periodic GDrive Excel sync
+// v14: Upgrade Excel exports with styling, currencies, auto column widths, formulas
 // =============================================
 
-const CACHE_NAME = 'reciminsap-v13';
+const CACHE_NAME = 'reciminsap-v14';
 
 const SAME_ORIGIN_ASSETS = [
   './',

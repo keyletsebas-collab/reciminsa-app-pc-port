@@ -1,7 +1,174 @@
 /* =============================================
-   EXCEL-UTILS.JS – Exportación a XLSX (SheetJS)
-   Modelo: Registro de Residuos – 3 hojas
+   EXCEL-UTILS.JS – Exportación a XLSX (SheetJS / xlsx-js-style)
+   Modelo: Registro de Residuos, Finanzas y Materiales
    ============================================= */
+
+/**
+ * Aplica estilos premium, alineación, formato de moneda y auto-ajuste de columnas a una hoja de cálculo.
+ * @param {Worksheet} ws - La hoja de cálculo de SheetJS a formatear.
+ * @returns {Worksheet} La hoja formateada.
+ */
+function formatAndStyleWorksheet(ws) {
+    if (!ws || !ws['!ref']) return ws;
+
+    const range = XLSX.utils.decode_range(ws['!ref']);
+    const cur = (typeof getCurrency === 'function') ? getCurrency() : { symbol: 'RD$', code: 'DOP' };
+    const curSymbol = cur.symbol.replace(/"/g, '""');
+    const currencyFormat = `"${curSymbol}"#,##0.00`;
+    
+    // Obtener las cabeceras en minúsculas para identificar columnas
+    const headers = [];
+    for (let C = range.s.c; C <= range.e.c; ++C) {
+        const headerCell = ws[XLSX.utils.encode_cell({ r: range.s.r, c: C })];
+        headers.push(headerCell ? String(headerCell.v).toLowerCase().trim() : '');
+    }
+
+    // Inicializar el arreglo de anchos mínimos de columna
+    const colWidths = Array(headers.length).fill(10);
+
+    // Definición de estilos premium
+    const headerStyle = {
+        font: { name: 'Segoe UI', sz: 11, bold: true, color: { rgb: 'FFFFFF' } },
+        fill: { fgColor: { rgb: '1B4A3E' } }, // Color verde bosque ecológico
+        alignment: { horizontal: 'center', vertical: 'center', wrapText: true },
+        border: {
+            top: { style: 'medium', color: { rgb: '11382F' } },
+            bottom: { style: 'medium', color: { rgb: '11382F' } },
+            left: { style: 'thin', color: { rgb: '4D7C6F' } },
+            right: { style: 'thin', color: { rgb: '4D7C6F' } }
+        }
+    };
+
+    const borderStyle = {
+        top: { style: 'thin', color: { rgb: 'E5E7EB' } },
+        bottom: { style: 'thin', color: { rgb: 'E5E7EB' } },
+        left: { style: 'thin', color: { rgb: 'E5E7EB' } },
+        right: { style: 'thin', color: { rgb: 'E5E7EB' } }
+    };
+
+    // Recorrer todas las celdas
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        const isHeader = (R === range.s.r);
+        // Zebra striping: alternar blanco y gris verdoso muy sutil
+        const zebraFill = { fgColor: { rgb: (R % 2 === 0) ? 'FFFFFF' : 'F3F7F5' } };
+
+        for (let C = range.s.c; C <= range.e.c; ++C) {
+            const cellRef = XLSX.utils.encode_cell({ r: R, c: C });
+            let cell = ws[cellRef];
+            
+            // Si la celda está vacía pero es fila de datos, le damos borde y estilo zebra
+            if (!cell) {
+                if (!isHeader) {
+                    ws[cellRef] = { t: 's', v: '', s: { fill: zebraFill, border: borderStyle } };
+                }
+                continue;
+            }
+
+            // Convertir texto numérico a número real para que funcionen los formatos y sumas en Excel
+            if (cell.t === 's' && cell.v !== '' && !isNaN(cell.v) && isFinite(cell.v)) {
+                cell.t = 'n';
+                cell.v = Number(cell.v);
+            }
+
+            if (isHeader) {
+                cell.s = headerStyle;
+            } else {
+                const headerText = headers[C] || '';
+                
+                // Alineación por defecto
+                let align = 'left';
+                if (cell.t === 'n') {
+                    align = 'right';
+                }
+                
+                // Identificadores, fechas, códigos, tipos y unidades van centrados
+                if (headerText.includes('id') || 
+                    headerText.includes('fecha') || 
+                    headerText.includes('código') || 
+                    headerText.includes('codigo') || 
+                    headerText.includes('tipo') || 
+                    headerText.includes('unidad') ||
+                    headerText.includes('hora')) {
+                    align = 'center';
+                }
+
+                // Detectar si la columna o la clave de resumen requiere formato de moneda
+                let isCurrency = false;
+                if (headerText.includes('monto') || 
+                    headerText.includes('precio') || 
+                    headerText.includes('subtotal') || 
+                    headerText.includes('total') || 
+                    headerText.includes('ganancia') || 
+                    headerText.includes('costo') || 
+                    headerText.includes('balance') || 
+                    headerText.includes('inversión') ||
+                    headerText.includes('inversion')) {
+                    isCurrency = true;
+                }
+
+                // Regla especial para tablas de clave-valor (ej: Resúmenes en Columna B, con etiqueta en Columna A)
+                if (C === 1) { 
+                    const labelCell = ws[XLSX.utils.encode_cell({ r: R, c: 0 })];
+                    if (labelCell && typeof labelCell.v === 'string') {
+                        const labelLower = labelCell.v.toLowerCase();
+                        if (labelLower.includes('total') || 
+                            labelLower.includes('ganancia') || 
+                            labelLower.includes('costo') || 
+                            labelLower.includes('monto') || 
+                            labelLower.includes('precio') || 
+                            labelLower.includes('inversión') || 
+                            labelLower.includes('inversion') || 
+                            labelLower.includes('balance')) {
+                            isCurrency = true;
+                        }
+                    }
+                }
+
+                if (isCurrency && cell.t === 'n') {
+                    cell.z = currencyFormat;
+                }
+
+                // Aplicar estilo de celda
+                cell.s = {
+                    font: { name: 'Segoe UI', sz: 10, color: { rgb: '374151' } },
+                    fill: zebraFill,
+                    alignment: { horizontal: align, vertical: 'center' },
+                    border: borderStyle
+                };
+            }
+
+            // Calcular el ancho óptimo de la columna
+            let valStr = '';
+            if (cell.f) {
+                // Si es fórmula, proveer ancho estimado de número formateado
+                valStr = '   $999,999.00   '; 
+            } else if (cell.v !== null && cell.v !== undefined) {
+                valStr = String(cell.v);
+                // Si tiene formato de moneda, agregar espacio para el símbolo y decimales
+                const headerText = headers[C] || '';
+                if (cell.t === 'n' && (headerText.includes('monto') || headerText.includes('precio') || headerText.includes('subtotal') || headerText.includes('total') || headerText.includes('ganancia') || headerText.includes('costo') || headerText.includes('balance'))) {
+                    valStr = cur.symbol + valStr + '.00';
+                }
+            }
+            colWidths[C] = Math.max(colWidths[C], valStr.length + 3);
+        }
+    }
+
+    // Aplicar anchos de columna (tope en 40 caracteres para evitar columnas gigantestas)
+    ws['!cols'] = colWidths.map(w => ({ wch: Math.min(w, 40) }));
+
+    // Aplicar alturas de filas espaciosas
+    const rowHeights = [];
+    for (let R = range.s.r; R <= range.e.r; ++R) {
+        rowHeights.push({ hpt: (R === range.s.r) ? 26 : 20 });
+    }
+    ws['!rows'] = rowHeights;
+
+    // Congelar la fila de cabecera
+    ws['!freeze'] = { xSplit: 0, ySplit: range.s.r + 1 };
+
+    return ws;
+}
 
 /**
  * Exporta un registro de factura/residuos a un archivo .xlsx
@@ -60,7 +227,6 @@ function exportarExcelResiduos(invoice) {
         const dataRows = items.map((item, idx) => {
             // Fila en Excel empieza en 2 (1 = encabezados)
             const rowNum = idx + 2;
-            // Código del material
             const codigo = item.matId || item.code || '';
 
             // Usamos fórmulas para Total compra, Total venta y Ganancia
@@ -82,61 +248,11 @@ function exportarExcelResiduos(invoice) {
             ];
         });
 
-        // Si es factura empresarial (sin priceSell), completar precio venta = 0
-        // Los datos ya lo manejan arriba con `|| 0`
-
         const ws1Data = [encabezados, ...dataRows];
         const ws1 = XLSX.utils.aoa_to_sheet(ws1Data);
-
-        // Anchos de columna sugeridos
-        ws1['!cols'] = [
-            { wch: 12 }, // A Fecha
-            { wch: 8 }, // B Hora
-            { wch: 10 }, // C Código
-            { wch: 22 }, // D Nombre residuo
-            { wch: 25 }, // E Proveedor
-            { wch: 10 }, // F Cantidad
-            { wch: 12 }, // G Unidad
-            { wch: 14 }, // H P. Compra
-            { wch: 14 }, // I P. Venta
-            { wch: 14 }, // J Total Compra
-            { wch: 14 }, // K Total Venta
-            { wch: 14 }, // L Ganancia
-            { wch: 20 }, // M Usuario
-            { wch: 30 }, // N Observaciones
-        ];
-
-        // Congelar fila 1
-        ws1['!freeze'] = { xSplit: 0, ySplit: 1 };
-
-        // Estilo de encabezados (negrita + fondo verde)
-        const headerStyle = {
-            font: { bold: true, color: { rgb: 'FFFFFF' } },
-            fill: { fgColor: { rgb: '16A34A' } },
-            alignment: { horizontal: 'center' }
-        };
-        const colLetters = 'ABCDEFGHIJKLMN'.split('');
-        colLetters.forEach(col => {
-            const cellRef = `${col}1`;
-            if (ws1[cellRef]) {
-                ws1[cellRef].s = headerStyle;
-            }
-        });
-
-        // Obtener divisa actual
-        const cur = (typeof getCurrency === 'function') ? getCurrency() : { symbol: 'RD$', code: 'DOP' };
-        const curSymbol = cur.symbol.replace(/"/g, '""'); // Escapar comillas para formato Excel
-
-        // Formato de moneda para columnas H, I, J, K, L
-        const moneyCols = ['H', 'I', 'J', 'K', 'L'];
-        for (let r = 2; r <= dataRows.length + 1; r++) {
-            moneyCols.forEach(col => {
-                const ref = `${col}${r}`;
-                if (ws1[ref]) {
-                    ws1[ref].z = `"${curSymbol}"#,##0.00`;
-                }
-            });
-        }
+        
+        // Aplicar formato premium a la hoja 1
+        formatAndStyleWorksheet(ws1);
 
         XLSX.utils.book_append_sheet(wb, ws1, 'Registros_Diarios');
 
@@ -153,6 +269,8 @@ function exportarExcelResiduos(invoice) {
             return (parseFloat(i.qty) || 0) > (parseFloat(max.qty) || 0) ? i : max;
         }, items[0] || {});
 
+        const cur = (typeof getCurrency === 'function') ? getCurrency() : { symbol: 'RD$', code: 'DOP' };
+
         const ws2Data = [
             ['Campo', 'Valor'],
             ['Fecha', fmtFecha(invoice.date)],
@@ -167,19 +285,9 @@ function exportarExcelResiduos(invoice) {
         ];
 
         const ws2 = XLSX.utils.aoa_to_sheet(ws2Data);
-        ws2['!cols'] = [{ wch: 28 }, { wch: 30 }];
-
-        // Estilo encabezado hoja 2
-        ['A1', 'B1'].forEach(ref => {
-            if (ws2[ref]) {
-                ws2[ref].s = headerStyle;
-            }
-        });
-
-        // Formato moneda en filas de moneda (6, 7, 8 → 0-indexed 5, 6, 7)
-        ['B6', 'B7', 'B8'].forEach(ref => {
-            if (ws2[ref]) ws2[ref].z = `"${curSymbol}"#,##0.00`;
-        });
+        
+        // Aplicar formato premium a la hoja 2
+        formatAndStyleWorksheet(ws2);
 
         XLSX.utils.book_append_sheet(wb, ws2, 'Resumen_Diario');
 
@@ -192,11 +300,9 @@ function exportarExcelResiduos(invoice) {
 
         const ws3Data = [catalogoHeader, ...catalogoRows];
         const ws3 = XLSX.utils.aoa_to_sheet(ws3Data);
-        ws3['!cols'] = [{ wch: 12 }, { wch: 25 }, { wch: 10 }];
-
-        ['A1', 'B1', 'C1'].forEach(ref => {
-            if (ws3[ref]) ws3[ref].s = headerStyle;
-        });
+        
+        // Aplicar formato premium a la hoja 3
+        formatAndStyleWorksheet(ws3);
 
         XLSX.utils.book_append_sheet(wb, ws3, 'Catalogo_Codigos');
 
@@ -246,27 +352,39 @@ function exportSelectedDataToExcel(selection = {}) {
         if (selection.invoices) {
             const invoices = JSON.parse(localStorage.getItem(userKey('recim_invoices')) || '[]');
             if (invoices.length > 0) {
+                const headers = [
+                    'ID', 'Fecha', 'Cliente', 'Tipo', 'Material', 
+                    'Cantidad', 'Unidad', 'Precio Compra', 'Precio Venta', 
+                    'Total Compra', 'Total Venta', 'Ganancia', 'Notas'
+                ];
                 const invRows = [];
+                let rowNum = 2; // Fila 1 es cabecera
+
                 invoices.forEach(inv => {
                     const items = inv.items || [];
                     items.forEach(item => {
-                        invRows.push({
-                            ID: inv.id,
-                            Fecha: inv.date,
-                            Cliente: inv.client || inv.company || '—',
-                            Tipo: inv.type || 'basic',
-                            Material: item.name || item.desc || '',
-                            Cantidad: item.qty || 0,
-                            Unidad: item.unit || 'kg',
-                            Precio_Compra: item.priceBuy || item.uprice || 0,
-                            Precio_Venta: item.priceSell || 0,
-                            Subtotal: (item.qty || 0) * (item.priceBuy || item.uprice || 0),
-                            Notas: inv.notes || ''
-                        });
+                        invRows.push([
+                            inv.id,
+                            inv.date,
+                            inv.client || inv.company || '—',
+                            inv.type || 'basic',
+                            item.name || item.desc || '',
+                            item.qty || 0,
+                            item.unit || 'kg',
+                            item.priceBuy || item.uprice || 0,
+                            item.priceSell || 0,
+                            { f: `F${rowNum}*H${rowNum}` }, // J - Total Compra (Fórmula)
+                            { f: `F${rowNum}*I${rowNum}` }, // K - Total Venta (Fórmula)
+                            { f: `K${rowNum}-J${rowNum}` }, // L - Ganancia (Fórmula)
+                            inv.notes || ''
+                        ]);
+                        rowNum++;
                     });
                 });
+
                 if (invRows.length > 0) {
-                    const wsInv = XLSX.utils.json_to_sheet(invRows);
+                    const wsInv = XLSX.utils.aoa_to_sheet([headers, ...invRows]);
+                    formatAndStyleWorksheet(wsInv);
                     XLSX.utils.book_append_sheet(wb, wsInv, 'Facturas');
                     sheetsAdded++;
                 }
@@ -277,13 +395,17 @@ function exportSelectedDataToExcel(selection = {}) {
         if (selection.income) {
             const ingresos = JSON.parse(localStorage.getItem(userKey('recim_ingresos')) || '[]');
             if (ingresos.length > 0) {
-                const wsInc = XLSX.utils.json_to_sheet(ingresos.map(i => ({
-                    ID: i.id,
-                    Fecha: i.date,
-                    Concepto: i.concept,
-                    Monto: i.amount,
-                    Categoria: i.category || 'General'
-                })));
+                const headers = ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoría', 'Notas'];
+                const incRows = ingresos.map(i => [
+                    i.id,
+                    i.date,
+                    i.concept,
+                    i.amount,
+                    i.category || 'General',
+                    i.notes || ''
+                ]);
+                const wsInc = XLSX.utils.aoa_to_sheet([headers, ...incRows]);
+                formatAndStyleWorksheet(wsInc);
                 XLSX.utils.book_append_sheet(wb, wsInc, 'Ingresos');
                 sheetsAdded++;
             }
@@ -293,13 +415,17 @@ function exportSelectedDataToExcel(selection = {}) {
         if (selection.expenses) {
             const egresos = JSON.parse(localStorage.getItem(userKey('recim_egresos')) || '[]');
             if (egresos.length > 0) {
-                const wsExp = XLSX.utils.json_to_sheet(egresos.map(e => ({
-                    ID: e.id,
-                    Fecha: e.date,
-                    Concepto: e.concept,
-                    Monto: e.amount,
-                    Categoria: e.category || 'General'
-                })));
+                const headers = ['ID', 'Fecha', 'Concepto', 'Monto', 'Categoría', 'Notas'];
+                const expRows = egresos.map(e => [
+                    e.id,
+                    e.date,
+                    e.concept,
+                    e.amount,
+                    e.category || 'General',
+                    e.notes || ''
+                ]);
+                const wsExp = XLSX.utils.aoa_to_sheet([headers, ...expRows]);
+                formatAndStyleWorksheet(wsExp);
                 XLSX.utils.book_append_sheet(wb, wsExp, 'Egresos');
                 sheetsAdded++;
             }
@@ -309,11 +435,14 @@ function exportSelectedDataToExcel(selection = {}) {
         if (selection.materials) {
             const mats = (typeof getMaterialCodes === 'function') ? getMaterialCodes() : [];
             if (mats.length > 0) {
-                const wsMat = XLSX.utils.json_to_sheet(mats.map(m => ({
-                    Código: m.id || m.code || '',
-                    Nombre: m.name || '',
-                    Unidad: m.unit || 'kg'
-                })));
+                const headers = ['Código', 'Nombre', 'Unidad'];
+                const matRows = mats.map(m => [
+                    m.id || m.code || '',
+                    m.name || '',
+                    m.unit || 'kg'
+                ]);
+                const wsMat = XLSX.utils.aoa_to_sheet([headers, ...matRows]);
+                formatAndStyleWorksheet(wsMat);
                 XLSX.utils.book_append_sheet(wb, wsMat, 'Catálogo_Materiales');
                 sheetsAdded++;
             }
@@ -336,6 +465,7 @@ function exportSelectedDataToExcel(selection = {}) {
 
 /**
  * Importa datos desde un archivo Excel y los guarda en la app.
+ * Soporta retrocompatibilidad con cabeceras antiguas (ej: Precio_Compra) y nuevas (ej: Precio Compra)
  * @param {File} file - El archivo subido por el usuario.
  */
 function importExcelData(file) {
@@ -357,23 +487,31 @@ function importExcelData(file) {
                     // Agrupar filas por ID para reconstruir facturas
                     const invMap = {};
                     rows.forEach(r => {
-                        if (!invMap[r.ID]) {
-                            invMap[r.ID] = {
-                                id: r.ID,
-                                date: r.Fecha,
-                                client: r.Cliente,
-                                type: r.Tipo,
-                                notes: r.Notas,
+                        // Soporta cabeceras con o sin guion bajo
+                        const rawId = r.ID || r.id;
+                        if (!rawId) return;
+
+                        if (!invMap[rawId]) {
+                            invMap[rawId] = {
+                                id: rawId,
+                                date: r.Fecha || r.fecha,
+                                client: r.Cliente || r.cliente,
+                                type: r.Tipo || r.tipo,
+                                notes: r.Notas || r.notas || '',
                                 items: [],
                                 createdAt: new Date().toISOString()
                             };
                         }
-                        invMap[r.ID].items.push({
-                            name: r.Material,
-                            qty: parseFloat(r.Cantidad),
-                            unit: r.Unidad,
-                            priceBuy: parseFloat(r.Precio_Compra),
-                            priceSell: parseFloat(r.Precio_Venta)
+
+                        const pBuy = parseFloat(r['Precio Compra'] !== undefined ? r['Precio Compra'] : (r.Precio_Compra !== undefined ? r.Precio_Compra : 0));
+                        const pSell = parseFloat(r['Precio Venta'] !== undefined ? r['Precio Venta'] : (r.Precio_Venta !== undefined ? r.Precio_Venta : 0));
+
+                        invMap[rawId].items.push({
+                            name: r.Material || r.material || '',
+                            qty: parseFloat(r.Cantidad || r.cantidad || 0),
+                            unit: r.Unidad || r.unidad || 'kg',
+                            priceBuy: pBuy,
+                            priceSell: pSell
                         });
                     });
                     localStorage.setItem('recim_invoices', JSON.stringify(Object.values(invMap)));
@@ -382,11 +520,12 @@ function importExcelData(file) {
 
                 if (sheetName === 'Ingresos') {
                     const mapped = rows.map(r => ({
-                        id: r.ID || 'INC-' + Date.now() + Math.random(),
-                        date: r.Fecha,
-                        concept: r.Concepto,
-                        amount: parseFloat(r.Monto),
-                        category: r.Categoria || 'Importado'
+                        id: r.ID || r.id || 'INC-' + Date.now() + Math.random(),
+                        date: r.Fecha || r.fecha,
+                        concept: r.Concepto || r.concepto,
+                        amount: parseFloat(r.Monto || r.monto || 0),
+                        category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
+                        notes: r.Notas || r.notas || ''
                     }));
                     localStorage.setItem('recim_ingresos', JSON.stringify(mapped));
                     importedCount++;
@@ -394,11 +533,12 @@ function importExcelData(file) {
 
                 if (sheetName === 'Egresos') {
                     const mapped = rows.map(r => ({
-                        id: r.ID || 'EXP-' + Date.now() + Math.random(),
-                        date: r.Fecha,
-                        concept: r.Concepto,
-                        amount: parseFloat(r.Monto),
-                        category: r.Categoria || 'Importado'
+                        id: r.ID || r.id || 'EXP-' + Date.now() + Math.random(),
+                        date: r.Fecha || r.fecha,
+                        concept: r.Concepto || r.concepto,
+                        amount: parseFloat(r.Monto || r.monto || 0),
+                        category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
+                        notes: r.Notas || r.notas || ''
                     }));
                     localStorage.setItem('recim_egresos', JSON.stringify(mapped));
                     importedCount++;
@@ -441,48 +581,73 @@ function exportBitacorasListToExcel(bitacoras) {
         showToast('📊 Generando Excel de Bitácoras...', 'info');
         const wb = XLSX.utils.book_new();
 
-        // 1. Hoja de Registros Detallados
+        // 1. Hoja de Registros Detallados (AOA con fórmulas dinámicas)
+        const detHeaders = [
+            'ID Bitácora', 'Fecha', 'Cliente/Procedencia', 'Material', 
+            'Cantidad', 'Unidad', 'Peso (kg)', 'Costo Compra', 'Precio Venta', 
+            'Total Compra', 'Total Venta', 'Balance', 'Notas'
+        ];
         const detRows = [];
+        let rowNum = 2; // Cabecera es 1
+
         bitacoras.forEach(b => {
             (b.items || []).forEach(item => {
-                detRows.push({
-                    'ID Bitácora': b.id,
-                    'Fecha': b.date,
-                    'Cliente/Procedencia': b.client || '—',
-                    'Material': item.name || '',
-                    'Cantidad': item.qty || 0,
-                    'Unidad': item.unit || 'lb',
-                    'Peso (kg)': item.peso || 0,
-                    'Costo Compra': item.priceBuy || 0,
-                    'Precio Venta': item.priceSell || 0,
-                    'Total Compra': item.totalCompra || 0,
-                    'Total Venta': item.totalVenta || 0,
-                    'Balance': item.balance || 0,
-                    'Notas': b.notes || ''
-                });
+                detRows.push([
+                    b.id,
+                    b.date,
+                    b.client || '—',
+                    item.name || '',
+                    item.qty || 0,
+                    item.unit || 'lb',
+                    item.peso || 0,
+                    item.priceBuy || 0,
+                    item.priceSell || 0,
+                    { f: `E${rowNum}*H${rowNum}` }, // J - Total Compra (Fórmula)
+                    { f: `E${rowNum}*I${rowNum}` }, // K - Total Venta (Fórmula)
+                    { f: `K${rowNum}-J${rowNum}` }, // L - Balance (Fórmula)
+                    b.notes || ''
+                ]);
+                rowNum++;
             });
         });
 
-        const wsDet = XLSX.utils.json_to_sheet(detRows);
+        const wsDet = XLSX.utils.aoa_to_sheet([detHeaders, ...detRows]);
+        formatAndStyleWorksheet(wsDet);
         XLSX.utils.book_append_sheet(wb, wsDet, 'Registros_Detallados');
 
-        // 2. Hoja de Resumen por Material
+        // 2. Hoja de Resumen por Material (AOA con fórmulas)
         const matSummary = {};
         bitacoras.forEach(b => {
             (b.items || []).forEach(item => {
                 const mid = item.matId || item.name;
                 if (!matSummary[mid]) {
-                    matSummary[mid] = { 'Material': item.name, 'Cant. Total': 0, 'Peso Total (kg)': 0, 'Inversión Total': 0, 'Venta Est.': 0, 'Balance': 0 };
+                    matSummary[mid] = { 'Material': item.name, 'Cant. Total': 0, 'Peso Total (kg)': 0, 'Inversión Total': 0, 'Venta Est.': 0 };
                 }
                 matSummary[mid]['Cant. Total'] += (item.qty || 0);
                 matSummary[mid]['Peso Total (kg)'] += (item.peso || 0);
                 matSummary[mid]['Inversión Total'] += (item.totalCompra || 0);
                 matSummary[mid]['Venta Est.'] += (item.totalVenta || 0);
-                matSummary[mid]['Balance'] += (item.balance || 0);
             });
         });
 
-        const wsSum = XLSX.utils.json_to_sheet(Object.values(matSummary));
+        const sumHeaders = ['Material', 'Cant. Total', 'Peso Total (kg)', 'Inversión Total', 'Venta Est.', 'Balance'];
+        const sumRows = [];
+        let sumRowNum = 2;
+
+        Object.values(matSummary).forEach(s => {
+            sumRows.push([
+                s.Material,
+                s['Cant. Total'],
+                s['Peso Total (kg)'],
+                s['Inversión Total'],
+                s['Venta Est.'],
+                { f: `E${sumRowNum}-D${sumRowNum}` } // F - Balance (Fórmula)
+            ]);
+            sumRowNum++;
+        });
+
+        const wsSum = XLSX.utils.aoa_to_sheet([sumHeaders, ...sumRows]);
+        formatAndStyleWorksheet(wsSum);
         XLSX.utils.book_append_sheet(wb, wsSum, 'Resumen_Materiales');
 
         const fileName = `Bitacora_Recogida_${new Date().toISOString().split('T')[0]}.xlsx`;
