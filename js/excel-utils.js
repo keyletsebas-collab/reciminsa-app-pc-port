@@ -455,7 +455,21 @@ function exportSelectedDataToExcel(selection = {}) {
 
         const fileName = `Reciminsa_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(wb, fileName);
-      function importExcelData(file) {
+        showToast('✅ Excel generado correctamente', 'success');
+
+    } catch (err) {
+        console.error('Custom Export Error:', err);
+        showToast('❌ Error al exportar datos', 'error');
+    }
+}
+
+/**
+ * Importa datos desde un archivo Excel y los guarda en la app.
+ * Utiliza Inteligencia Artificial (Gemini) para mapear y clasificar columnas automáticamente
+ * si la clave API está configurada. Cuenta con fallback manual clásico si la IA no está disponible.
+ * @param {File} file - El archivo subido por el usuario.
+ */
+function importExcelData(file) {
     if (!file) return;
 
     let uniqueCounter = 0;
