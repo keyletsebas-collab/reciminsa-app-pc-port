@@ -338,64 +338,85 @@ function renderSettingsPage(container) {
 // ---- Google Drive Backup Handlers ----
 
 const GDRIVE_SCRIPT_CODE = `/**
- * Script de Google Apps para enviar correos y realizar respaldos en Google Drive de forma segura.
- * Desplegar desde tu cuenta de Google personal.
+ * Google Apps Script – Reciminsap
+ * Maneja: respaldo JSON, archivos Excel (.xlsx), y envío de correos.
+ * Despliega desde: https://script.google.com  → Nuevo proyecto → Pegar → Implementar → App web
  */
 
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
-    
-    // CASO A: Respaldo en Google Drive
+
+    // ─── CASO A: Guardar archivo Excel en Google Drive ───
+    if (data.action === 'excel') {
+      var folderId      = data.folderId;
+      var fileName      = data.fileName;          // ej: Reciminsap_Facturas_xxx_2026-06-17.xlsx
+      var base64Content = data.base64Content;     // string base64 del .xlsx
+
+      var folder = folderId
+        ? DriveApp.getFolderById(folderId)
+        : DriveApp.getRootFolder();
+
+      // Decodificar base64 → Blob binario
+      var decoded = Utilities.base64Decode(base64Content);
+      var blob    = Utilities.newBlob(
+        decoded,
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        fileName
+      );
+
+      // Si ya existe un archivo con ese nombre, actualizarlo (evita duplicados)
+      var existing = folder.getFilesByName(fileName);
+      if (existing.hasNext()) {
+        existing.next().setContent(blob.getDataAsString());
+        // Para binarios usamos trashed + nuevo archivo
+        existing = folder.getFilesByName(fileName);
+        if (existing.hasNext()) { existing.next().setTrashed(true); }
+      }
+      folder.createFile(blob);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'success', file: fileName }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ─── CASO B: Respaldo JSON en Google Drive ───
     if (data.action === 'backup') {
       var folderId = data.folderId;
       var fileName = data.fileName;
-      var content = data.content; // contenido del JSON de respaldo
-      
-      var folder;
-      if (folderId) {
-        folder = DriveApp.getFolderById(folderId);
-      } else {
-        folder = DriveApp.getRootFolder();
-      }
-      
-      // Buscar si ya existe un archivo con ese nombre para actualizarlo y evitar duplicados
+      var content  = data.content;
+
+      var folder = folderId
+        ? DriveApp.getFolderById(folderId)
+        : DriveApp.getRootFolder();
+
       var files = folder.getFilesByName(fileName);
-      var file;
       if (files.hasNext()) {
-        file = files.next();
-        file.setContent(content);
+        files.next().setContent(content);
       } else {
-        file = folder.createFile(fileName, content, MimeType.PLAIN_TEXT);
+        folder.createFile(fileName, content, MimeType.PLAIN_TEXT);
       }
-      
-      return ContentService.createTextOutput(JSON.stringify({ 
-        status: "success", 
-        message: "Respaldo guardado exitosamente en Google Drive.",
-        fileUrl: file.getUrl() 
-      }))
-      .setMimeType(ContentService.MimeType.JSON);
+
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'success', message: 'Respaldo JSON guardado.' }))
+        .setMimeType(ContentService.MimeType.JSON);
     }
-    
-    // CASO B: Envío de Correo (Verificación y Recuperación)
-    var to = data.to;
-    var subject = data.subject;
+
+    // ─── CASO C: Envío de Correo ───
+    var to       = data.to;
+    var subject  = data.subject;
     var htmlBody = data.htmlBody;
     var textBody = data.textBody;
-    
-    // Envío del correo usando la API oficial de Gmail
-    MailApp.sendEmail({
-      to: to,
-      subject: subject,
-      body: textBody,
-      htmlBody: htmlBody
-    });
-    
-    return ContentService.createTextOutput(JSON.stringify({ status: "success" }))
+
+    MailApp.sendEmail({ to: to, subject: subject, body: textBody, htmlBody: htmlBody });
+
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'success' }))
       .setMimeType(ContentService.MimeType.JSON);
-      
+
   } catch (error) {
-    return ContentService.createTextOutput(JSON.stringify({ status: "error", message: error.toString() }))
+    return ContentService
+      .createTextOutput(JSON.stringify({ status: 'error', message: error.toString() }))
       .setMimeType(ContentService.MimeType.JSON);
   }
 }
