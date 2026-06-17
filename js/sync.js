@@ -199,7 +199,7 @@
             if (typeof getAppsScriptUrl === 'function') {
                 scriptUrl = getAppsScriptUrl();
             } else {
-                scriptUrl = 'https://script.google.com/macros/s/AKfycbzrwE5FXgHuCGMIwiZE34DZChQP4zhvxaicj5eXcXKFw7qrew_jU6dVc2e50VxBQxP6/exec';
+                scriptUrl = 'https://script.google.com/macros/s/AKfycbyK5FcmVtRJk8UiX7vTbLKaJ1Vwe1QOnmT2mX8E0rmI_sjAaBf-hg7zCqWuoD6LynCj/exec';
             }
         }
         
@@ -254,7 +254,7 @@ async function syncPushGDriveExcel() {
         if (typeof getAppsScriptUrl === 'function') {
             scriptUrl = getAppsScriptUrl();
         } else {
-            scriptUrl = 'https://script.google.com/macros/s/AKfycbzrwE5FXgHuCGMIwiZE34DZChQP4zhvxaicj5eXcXKFw7qrew_jU6dVc2e50VxBQxP6/exec';
+            scriptUrl = 'https://script.google.com/macros/s/AKfycbyK5FcmVtRJk8UiX7vTbLKaJ1Vwe1QOnmT2mX8E0rmI_sjAaBf-hg7zCqWuoD6LynCj/exec';
         }
     }
 
