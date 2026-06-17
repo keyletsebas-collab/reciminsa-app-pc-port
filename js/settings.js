@@ -402,11 +402,27 @@ function doPost(e) {
         .setMimeType(ContentService.MimeType.JSON);
     }
 
-    // ─── CASO C: Envío de Correo ───
+    // ─── CASO C: Envío de Correo (con límite de 15 minutos para verificación) ───
     var to       = data.to;
     var subject  = data.subject;
     var htmlBody = data.htmlBody;
     var textBody = data.textBody;
+
+    if (subject && (subject.indexOf('Activa') !== -1 || subject.indexOf('Restablecer') !== -1 || subject.indexOf('Código') !== -1)) {
+      var props = PropertiesService.getScriptProperties();
+      var key = 'limit_' + to.replace(/[^a-zA-Z0-9]/g, '_');
+      var lastSent = props.getProperty(key);
+      var now = Date.now();
+      if (lastSent) {
+        var elapsed = now - parseInt(lastSent, 10);
+        if (elapsed < 15 * 60 * 1000) {
+          return ContentService
+            .createTextOutput(JSON.stringify({ status: 'rate-limited', message: 'Código ya enviado en los últimos 15 minutos.' }))
+            .setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+      props.setProperty(key, now.toString());
+    }
 
     MailApp.sendEmail({ to: to, subject: subject, body: textBody, htmlBody: htmlBody });
 
