@@ -455,27 +455,34 @@ function exportSelectedDataToExcel(selection = {}) {
 
         const fileName = `Reciminsa_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
         XLSX.writeFile(wb, fileName);
-        showToast('✅ Excel generado correctamente', 'success');
-
-    } catch (err) {
-        console.error('Custom Export Error:', err);
-        showToast('❌ Error al exportar datos', 'error');
-    }
-}
-
-/**
- * Importa datos desde un archivo Excel y los guarda en la app.
- * Soporta retrocompatibilidad con cabeceras antiguas (ej: Precio_Compra) y nuevas (ej: Precio Compra)
- * @param {File} file - El archivo subido por el usuario.
- */
-/**
- * Importa datos desde un archivo Excel y los guarda en la app.
- * Utiliza Inteligencia Artificial (Gemini) para mapear y clasificar columnas automáticamente
- * si la clave API está configurada. Cuenta con fallback manual clásico si la IA no está disponible.
- * @param {File} file - El archivo subido por el usuario.
- */
-function importExcelData(file) {
+      function importExcelData(file) {
     if (!file) return;
+
+    let uniqueCounter = 0;
+    function generateUniqueId(prefix) {
+        uniqueCounter++;
+        return `${prefix}-${Date.now()}-${uniqueCounter}-${Math.floor(Math.random() * 1000000)}`;
+    }
+
+    function isIdInRawData(id, rawData) {
+        if (!id || !rawData) return false;
+        const idStr = String(id).toLowerCase().trim();
+        for (const sheetName in rawData) {
+            const rows = rawData[sheetName];
+            if (Array.isArray(rows)) {
+                for (const row of rows) {
+                    for (const key in row) {
+                        const val = row[key];
+                        if (val !== undefined && val !== null && String(val).toLowerCase().trim() === idStr) {
+                            return true;
+                        }
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
     const reader = new FileReader();
     reader.onload = async (e) => {
         try {
@@ -569,7 +576,7 @@ Reglas importantes:
 - Intenta emparejar los nombres de los materiales de los items con este catálogo existente de códigos de materiales de la app:
 ${JSON.stringify(materialsReference)}
 - Si no coinciden exactamente, asígnales el matId correspondiente si es obvio (ej: "cartón" o "cartones" -> "carton") o conserva el nombre original.
-- Para los IDs que generes, utiliza prefijos coherentes (BIT-, ING-, EGR-, INV-) seguidos de un número aleatorio único para evitar colisiones con los registros locales existentes.
+- IMPORTANTE SOBRE LOS IDs: Si el registro original del Excel tiene una columna de ID (o identificador) y tiene un valor, debes conservar ese ID exacto en el campo "id". Si el registro no tiene un ID en el Excel, NO inventes un ID; deja el campo "id" vacío, null o no lo incluyes, ya que el sistema cliente le asignará un ID único de forma automática.
 - Devuelve únicamente el objeto JSON solicitado con las 3 listas: { "invoices": [...], "ingresos": [...], "egresos": [...] }. No incluyas explicaciones de texto, código de formateo markdown (sin \`\`\`json ni \`\`\`), solo el JSON limpio listo para ser parseado por JSON.parse().`;
 
                     const prompt = `${systemPrompt}\n\nAquí están los datos del archivo Excel crudo:\n${JSON.stringify(rawWorkbookData)}`;
@@ -609,6 +616,10 @@ ${JSON.stringify(materialsReference)}
                         const localInvoicesKey = userKey('recim_invoices');
                         const localInvoices = JSON.parse(localStorage.getItem(localInvoicesKey) || '[]');
                         parsedData.invoices.forEach(inv => {
+                            if (!inv.id || !isIdInRawData(inv.id, rawWorkbookData)) {
+                                const prefix = inv.type === 'normal' ? 'INV' : 'BIT';
+                                inv.id = generateUniqueId(prefix);
+                            }
                             const idx = localInvoices.findIndex(item => item.id === inv.id);
                             if (idx !== -1) {
                                 localInvoices[idx] = inv;
@@ -625,6 +636,9 @@ ${JSON.stringify(materialsReference)}
                         const localIngresosKey = userKey('recim_ingresos');
                         const localIngresos = JSON.parse(localStorage.getItem(localIngresosKey) || '[]');
                         parsedData.ingresos.forEach(ing => {
+                            if (!ing.id || !isIdInRawData(ing.id, rawWorkbookData)) {
+                                ing.id = generateUniqueId('ING');
+                            }
                             const idx = localIngresos.findIndex(item => item.id === ing.id);
                             if (idx !== -1) {
                                 localIngresos[idx] = ing;
@@ -641,6 +655,9 @@ ${JSON.stringify(materialsReference)}
                         const localEgresosKey = userKey('recim_egresos');
                         const localEgresos = JSON.parse(localStorage.getItem(localEgresosKey) || '[]');
                         parsedData.egresos.forEach(egr => {
+                            if (!egr.id || !isIdInRawData(egr.id, rawWorkbookData)) {
+                                egr.id = generateUniqueId('EGR');
+                            }
                             const idx = localEgresos.findIndex(item => item.id === egr.id);
                             if (idx !== -1) {
                                 localEgresos[idx] = egr;
@@ -678,14 +695,15 @@ ${JSON.stringify(materialsReference)}
 
                 if (sheetName === 'Facturas') {
                     const localInvoicesKey = userKey('recim_invoices');
+                    const localInvoices = JSON.parse(localStorage.getItem(localInvoicesKey) || '[]');
                     const invMap = {};
                     rows.forEach(r => {
                         const rawId = r.ID || r.id;
-                        if (!rawId) return;
+                        const groupKey = rawId || `group_${r.Fecha || 'nofecha'}_${r.Cliente || 'nocliente'}_${r.Notas || ''}`;
 
-                        if (!invMap[rawId]) {
-                            invMap[rawId] = {
-                                id: rawId,
+                        if (!invMap[groupKey]) {
+                            invMap[groupKey] = {
+                                id: rawId ? String(rawId) : null,
                                 date: r.Fecha || r.fecha,
                                 client: r.Cliente || r.cliente,
                                 type: r.Tipo || r.tipo,
@@ -698,7 +716,7 @@ ${JSON.stringify(materialsReference)}
                         const pBuy = parseFloat(r['Precio Compra'] !== undefined ? r['Precio Compra'] : (r.Precio_Compra !== undefined ? r.Precio_Compra : 0));
                         const pSell = parseFloat(r['Precio Venta'] !== undefined ? r['Precio Venta'] : (r.Precio_Venta !== undefined ? r.Precio_Venta : 0));
 
-                        invMap[rawId].items.push({
+                        invMap[groupKey].items.push({
                             name: r.Material || r.material || '',
                             qty: parseFloat(r.Cantidad || r.cantidad || 0),
                             unit: r.Unidad || r.unidad || 'kg',
@@ -706,35 +724,73 @@ ${JSON.stringify(materialsReference)}
                             priceSell: pSell
                         });
                     });
-                    localStorage.setItem(localInvoicesKey, JSON.stringify(Object.values(invMap)));
+                    
+                    // Merge invMap values into localInvoices
+                    Object.values(invMap).forEach(newInv => {
+                        if (!newInv.id) {
+                            const prefix = newInv.type === 'normal' ? 'INV' : 'BIT';
+                            newInv.id = generateUniqueId(prefix);
+                        }
+                        const idx = localInvoices.findIndex(item => item.id === newInv.id);
+                        if (idx !== -1) {
+                            localInvoices[idx] = newInv;
+                        } else {
+                            localInvoices.push(newInv);
+                        }
+                    });
+                    localStorage.setItem(localInvoicesKey, JSON.stringify(localInvoices));
                     importedCount++;
                 }
 
                 if (sheetName === 'Ingresos') {
                     const localIngresosKey = userKey('recim_ingresos');
-                    const mapped = rows.map(r => ({
-                        id: r.ID || r.id || 'INC-' + Date.now() + Math.random(),
-                        date: r.Fecha || r.fecha,
-                        concept: r.Concepto || r.concepto,
-                        amount: parseFloat(r.Monto || r.monto || 0),
-                        category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
-                        notes: r.Notas || r.notas || ''
-                    }));
-                    localStorage.setItem(localIngresosKey, JSON.stringify(mapped));
+                    const localIngresos = JSON.parse(localStorage.getItem(localIngresosKey) || '[]');
+                    const mapped = rows.map(r => {
+                        const rawId = r.ID || r.id;
+                        return {
+                            id: rawId ? String(rawId) : generateUniqueId('ING'),
+                            date: r.Fecha || r.fecha,
+                            concept: r.Concepto || r.concepto,
+                            amount: parseFloat(r.Monto || r.monto || 0),
+                            category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
+                            notes: r.Notas || r.notas || ''
+                        };
+                    });
+                    mapped.forEach(newIng => {
+                        const idx = localIngresos.findIndex(item => item.id === newIng.id);
+                        if (idx !== -1) {
+                            localIngresos[idx] = newIng;
+                        } else {
+                            localIngresos.push(newIng);
+                        }
+                    });
+                    localStorage.setItem(localIngresosKey, JSON.stringify(localIngresos));
                     importedCount++;
                 }
 
                 if (sheetName === 'Egresos') {
                     const localEgresosKey = userKey('recim_egresos');
-                    const mapped = rows.map(r => ({
-                        id: r.ID || r.id || 'EXP-' + Date.now() + Math.random(),
-                        date: r.Fecha || r.fecha,
-                        concept: r.Concepto || r.concepto,
-                        amount: parseFloat(r.Monto || r.monto || 0),
-                        category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
-                        notes: r.Notas || r.notas || ''
-                    }));
-                    localStorage.setItem(localEgresosKey, JSON.stringify(mapped));
+                    const localEgresos = JSON.parse(localStorage.getItem(localEgresosKey) || '[]');
+                    const mapped = rows.map(r => {
+                        const rawId = r.ID || r.id;
+                        return {
+                            id: rawId ? String(rawId) : generateUniqueId('EGR'),
+                            date: r.Fecha || r.fecha,
+                            concept: r.Concepto || r.concepto,
+                            amount: parseFloat(r.Monto || r.monto || 0),
+                            category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
+                            notes: r.Notas || r.notas || ''
+                        };
+                    });
+                    mapped.forEach(newEgr => {
+                        const idx = localEgresos.findIndex(item => item.id === newEgr.id);
+                        if (idx !== -1) {
+                            localEgresos[idx] = newEgr;
+                        } else {
+                            localEgresos.push(newEgr);
+                        }
+                    });
+                    localStorage.setItem(localEgresosKey, JSON.stringify(localEgresos));
                     importedCount++;
                 }
             }
