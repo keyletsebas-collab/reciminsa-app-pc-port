@@ -119,6 +119,17 @@
     function getSyncDbId() {
         try {
             const session = JSON.parse(localStorage.getItem('recim_session') || '{}');
+            if (session.accountId) {
+                if (typeof calculateSecureChecksum === 'function') {
+                    const expectedSig = calculateSecureChecksum(session.accountId, session.email, session.familyId);
+                    if (session.signature !== expectedSig) {
+                        console.warn("⚠️ Sesión alterada en getSyncDbId. Cerrando sesión...");
+                        localStorage.removeItem('recim_session');
+                        window.location.reload();
+                        return null;
+                    }
+                }
+            }
             if (session.familyId) {
                 return `family_${session.familyId}`;
             }

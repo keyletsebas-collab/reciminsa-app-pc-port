@@ -42,3 +42,26 @@ try {
 } catch (err) {
     console.error("❌ Error CRÍTICO conectando a Supabase:", err);
 }
+
+/**
+ * Genera una firma criptográfica síncrona para proteger la sesión del usuario contra alteraciones.
+ */
+function calculateSecureChecksum(accountId, email, familyId) {
+    const secret = APP_SECURITY_TOKEN;
+    const message = `${accountId}|${email}|${familyId || ''}|${secret}`;
+    
+    let h1 = 0x811c9dc5;
+    let h2 = 0x55106bb3;
+    
+    for (let i = 0; i < message.length; i++) {
+        const char = message.charCodeAt(i);
+        h1 = Math.imul(h1 ^ char, 16777619);
+        h2 = Math.imul(h2 ^ char, 10995116);
+    }
+    
+    h1 = h1 ^ (h2 >>> 16);
+    h2 = h2 ^ (h1 << 15);
+    
+    const combined = `${(h1 >>> 0).toString(16)}${(h2 >>> 0).toString(16)}`;
+    return combined;
+}

@@ -155,6 +155,17 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const user = JSON.parse(session);
             
+            // Verificación criptográfica de la sesión
+            if (user && user.accountId && typeof calculateSecureChecksum === 'function') {
+                const expectedSig = calculateSecureChecksum(user.accountId, user.email, user.familyId);
+                if (user.signature !== expectedSig) {
+                    console.warn("⚠️ Sesión alterada detectada al inicio. Cerrando sesión...");
+                    localStorage.removeItem('recim_session');
+                    window.location.reload();
+                    return;
+                }
+            }
+            
             // Verificación asíncrona y actualización de perfil en Supabase
             if (user && user.accountId && typeof isSupabaseActive !== 'undefined' && isSupabaseActive && supabaseClient) {
                 supabaseClient
@@ -187,6 +198,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 cachedSession.familyId = newFamilyId;
                                 cachedSession.name = newName;
                                 cachedSession.avatar = newAvatar;
+                                if (typeof calculateSecureChecksum === 'function') {
+                                    cachedSession.signature = calculateSecureChecksum(cachedSession.accountId, cachedSession.email, newFamilyId);
+                                }
                                 localStorage.setItem('recim_session', JSON.stringify(cachedSession));
                                 
                                 // Update sidebar UI directly

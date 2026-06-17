@@ -13,6 +13,15 @@ function userKey(baseKey) {
     if (session) {
       const user = JSON.parse(session);
       if (user && user.accountId) {
+        if (typeof calculateSecureChecksum === 'function') {
+          const expectedSig = calculateSecureChecksum(user.accountId, user.email, user.familyId);
+          if (user.signature !== expectedSig) {
+            console.warn("⚠️ Sesión alterada detectada. Cerrando sesión...");
+            localStorage.removeItem('recim_session');
+            window.location.reload();
+            return baseKey;
+          }
+        }
         return `${baseKey}_${user.accountId}`;
       }
     }
@@ -170,6 +179,10 @@ async function handleLogin(evt) {
         accountId: data.id,
         familyId: data.family_id || null
       };
+
+      if (typeof calculateSecureChecksum === 'function') {
+        session.signature = calculateSecureChecksum(session.accountId, session.email, session.familyId);
+      }
 
       // Guardar sesión
       localStorage.setItem('recim_session', JSON.stringify(session));
@@ -424,6 +437,10 @@ async function handleVerifySignup(evt) {
       accountId: accountId,
       familyId: null
     };
+
+    if (typeof calculateSecureChecksum === 'function') {
+      session.signature = calculateSecureChecksum(session.accountId, session.email, session.familyId);
+    }
 
     // Save session
     localStorage.setItem('recim_session', JSON.stringify(session));
