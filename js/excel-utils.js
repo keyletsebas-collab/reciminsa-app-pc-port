@@ -468,6 +468,12 @@ function exportSelectedDataToExcel(selection = {}) {
  * Soporta retrocompatibilidad con cabeceras antiguas (ej: Precio_Compra) y nuevas (ej: Precio Compra)
  * @param {File} file - El archivo subido por el usuario.
  */
+/**
+ * Importa datos desde un archivo Excel y los guarda en la app.
+ * Utiliza Inteligencia Artificial (Gemini) para mapear y clasificar columnas automáticamente
+ * si la clave API está configurada. Cuenta con fallback manual clásico si la IA no está disponible.
+ * @param {File} file - El archivo subido por el usuario.
+ */
 function importExcelData(file) {
     if (!file) return;
     const reader = new FileReader();
@@ -476,18 +482,204 @@ function importExcelData(file) {
             const data = new Uint8Array(e.target.result);
             const workbook = XLSX.read(data, { type: 'array' });
             
-            let importedCount = 0;
+            // 1. Convertir datos de hojas Excel a JSON crudo estructurado
+            const rawWorkbookData = {};
+            for (const sheetName of workbook.SheetNames) {
+                const sheet = workbook.Sheets[sheetName];
+                const rows = XLSX.utils.sheet_to_json(sheet);
+                if (rows.length > 0) {
+                    rawWorkbookData[sheetName] = rows;
+                }
+            }
 
-            // Procesar cada pestaña conocida
+            if (Object.keys(rawWorkbookData).length === 0) {
+                showToast('⚠️ El archivo Excel está vacío o no contiene filas válidas', 'warning');
+                return;
+            }
+
+            // 2. Si la clave API de Gemini está disponible, ejecutar Importación Inteligente con IA
+            if (typeof geminiApiKey !== 'undefined' && geminiApiKey) {
+                showToast('🤖 IA: Analizando y estructurando Excel con Inteligencia Artificial...', 'info', 8000);
+                
+                try {
+                    const matsRef = typeof getMaterialCodes === 'function' ? getMaterialCodes() : [];
+                    const materialsReference = matsRef.map(m => ({ id: m.id, code: m.code, name: m.name, unit: m.unit }));
+
+                    // Endpoint oficial de la API de Gemini
+                    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
+                    
+                    const systemPrompt = `Eres un asistente de inteligencia artificial experto en migración y limpieza de datos para la aplicación Reciminsap (gestión de reciclaje y finanzas).
+Tu tarea es analizar los datos crudos extraídos de un archivo Excel importado y mapearlos de forma inteligente a nuestra estructura de datos de base de datos.
+
+Nuestra estructura de datos consta de 3 colecciones:
+1. "invoices" (Facturas/Bitácoras):
+   Cada factura/bitácora debe tener la siguiente estructura:
+   {
+     "id": "BIT-xxxx" (si es tipo "basica") o "INV-xxxx" (si es tipo "normal"),
+     "date": "YYYY-MM-DD",
+     "client": "Nombre del cliente/proveedor",
+     "type": "basica" o "normal",
+     "notes": "Notas adicionales",
+     "items": [
+       {
+         "matId": "Código del material (ej: mat-xxxx o código corto)",
+         "name": "Nombre legible del material",
+         "qty": número (cantidad),
+         "unit": "kg", "lb" o "unidad",
+         "priceBuy": número (precio de compra),
+         "priceSell": número (precio de venta),
+         "peso": número (peso convertido a kg. Nota: 1 lb = 0.453592 kg. Si la unidad es kg, peso = qty),
+         "totalCompra": número (qty * priceBuy),
+         "totalVenta": número (qty * priceSell),
+         "balance": número (totalVenta - totalCompra)
+       }
+     ],
+     "totalCompra": número (suma de totalCompra de los items),
+     "totalVenta": número (suma de totalVenta de los items),
+     "balance": número (totalVenta - totalCompra),
+     "createdAt": "Fecha en formato ISO"
+   }
+
+2. "ingresos" (Ingresos financieros):
+   {
+     "id": "ING-xxxx",
+     "date": "YYYY-MM-DD",
+     "concept": "Concepto o descripción",
+     "amount": número (monto total),
+     "category": "Materiales", "Otros", etc.,
+     "notes": "Notas",
+     "createdAt": "Fecha en formato ISO"
+   }
+
+3. "egresos" (Egresos/Gastos financieros):
+   {
+     "id": "EGR-xxxx",
+     "date": "YYYY-MM-DD",
+     "concept": "Concepto o descripción",
+     "amount": número (monto total),
+     "category": "Materiales", "Otros", "Comida", etc.,
+     "notes": "Notas",
+     "createdAt": "Fecha en formato ISO"
+   }
+
+Reglas importantes:
+- Si una fila representa una compra o recogida de materiales reciclables (tiene campos como peso/cantidad y precio de compra de residuos), debes mapearla a "invoices" de tipo "basica".
+- Si es una factura empresarial de venta o servicio completo, mapearla a "invoices" de tipo "normal".
+- Si solo son transacciones de dinero sueltas (ej: "pago de luz", "venta de cobre", "comida", "sueldo"), mapealas a "ingresos" o "egresos" según corresponda.
+- Intenta emparejar los nombres de los materiales de los items con este catálogo existente de códigos de materiales de la app:
+${JSON.stringify(materialsReference)}
+- Si no coinciden exactamente, asígnales el matId correspondiente si es obvio (ej: "cartón" o "cartones" -> "carton") o conserva el nombre original.
+- Para los IDs que generes, utiliza prefijos coherentes (BIT-, ING-, EGR-, INV-) seguidos de un número aleatorio único para evitar colisiones con los registros locales existentes.
+- Devuelve únicamente el objeto JSON solicitado con las 3 listas: { "invoices": [...], "ingresos": [...], "egresos": [...] }. No incluyas explicaciones de texto, código de formateo markdown (sin \`\`\`json ni \`\`\`), solo el JSON limpio listo para ser parseado por JSON.parse().`;
+
+                    const prompt = `${systemPrompt}\n\nAquí están los datos del archivo Excel crudo:\n${JSON.stringify(rawWorkbookData)}`;
+
+                    const apiResponse = await fetch(url, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: prompt }] }],
+                            generationConfig: {
+                                responseMimeType: "application/json"
+                            }
+                        })
+                    });
+
+                    if (!apiResponse.ok) {
+                        throw new Error(`Error en API Gemini: ${apiResponse.statusText}`);
+                    }
+
+                    const jsonResp = await apiResponse.json();
+                    const aiText = jsonResp.candidates?.[0]?.content?.parts?.[0]?.text;
+                    if (!aiText) {
+                        throw new Error("La IA no devolvió contenido válido.");
+                    }
+
+                    // Parsear el JSON retornado por Gemini
+                    const parsedData = JSON.parse(aiText.trim());
+
+                    let importedInvoicesCount = 0;
+                    let importedIngresosCount = 0;
+                    let importedEgresosCount = 0;
+
+                    // Fusionar Facturas
+                    if (parsedData.invoices && Array.isArray(parsedData.invoices)) {
+                        const localInvoicesKey = userKey('recim_invoices');
+                        const localInvoices = JSON.parse(localStorage.getItem(localInvoicesKey) || '[]');
+                        parsedData.invoices.forEach(inv => {
+                            const idx = localInvoices.findIndex(item => item.id === inv.id);
+                            if (idx !== -1) {
+                                localInvoices[idx] = inv;
+                            } else {
+                                localInvoices.push(inv);
+                            }
+                            importedInvoicesCount++;
+                        });
+                        localStorage.setItem(localInvoicesKey, JSON.stringify(localInvoices));
+                    }
+
+                    // Fusionar Ingresos
+                    if (parsedData.ingresos && Array.isArray(parsedData.ingresos)) {
+                        const localIngresosKey = userKey('recim_ingresos');
+                        const localIngresos = JSON.parse(localStorage.getItem(localIngresosKey) || '[]');
+                        parsedData.ingresos.forEach(ing => {
+                            const idx = localIngresos.findIndex(item => item.id === ing.id);
+                            if (idx !== -1) {
+                                localIngresos[idx] = ing;
+                            } else {
+                                localIngresos.push(ing);
+                            }
+                            importedIngresosCount++;
+                        });
+                        localStorage.setItem(localIngresosKey, JSON.stringify(localIngresos));
+                    }
+
+                    // Fusionar Egresos
+                    if (parsedData.egresos && Array.isArray(parsedData.egresos)) {
+                        const localEgresosKey = userKey('recim_egresos');
+                        const localEgresos = JSON.parse(localStorage.getItem(localEgresosKey) || '[]');
+                        parsedData.egresos.forEach(egr => {
+                            const idx = localEgresos.findIndex(item => item.id === egr.id);
+                            if (idx !== -1) {
+                                localEgresos[idx] = egr;
+                            } else {
+                                localEgresos.push(egr);
+                            }
+                            importedEgresosCount++;
+                        });
+                        localStorage.setItem(localEgresosKey, JSON.stringify(localEgresos));
+                    }
+
+                    // Forzar sincronización en la nube Supabase inmediatamente
+                    if (window.forceSync) {
+                        await window.forceSync();
+                    }
+
+                    showToast(`🤖 ¡Importación por IA completada! (${importedInvoicesCount} facturas/bitácoras, ${importedIngresosCount} ingresos, ${importedEgresosCount} egresos)`, 'success', 6000);
+                    
+                    if (typeof rerenderCurrentPage === 'function') {
+                        rerenderCurrentPage();
+                    }
+                    return;
+
+                } catch (aiErr) {
+                    console.warn("🤖 Error en importación inteligente por IA. Ejecutando fallback manual...", aiErr);
+                    showToast('⚠️ IA no disponible, ejecutando importación manual estándar...', 'warning');
+                }
+            }
+
+            // 3. Fallback Manual Clásico si no hay IA disponible o si falló
+            let importedCount = 0;
             for (const sheetName of workbook.SheetNames) {
                 const sheet = workbook.Sheets[sheetName];
                 const rows = XLSX.utils.sheet_to_json(sheet);
 
                 if (sheetName === 'Facturas') {
-                    // Agrupar filas por ID para reconstruir facturas
+                    const localInvoicesKey = userKey('recim_invoices');
                     const invMap = {};
                     rows.forEach(r => {
-                        // Soporta cabeceras con o sin guion bajo
                         const rawId = r.ID || r.id;
                         if (!rawId) return;
 
@@ -514,11 +706,12 @@ function importExcelData(file) {
                             priceSell: pSell
                         });
                     });
-                    localStorage.setItem('recim_invoices', JSON.stringify(Object.values(invMap)));
+                    localStorage.setItem(localInvoicesKey, JSON.stringify(Object.values(invMap)));
                     importedCount++;
                 }
 
                 if (sheetName === 'Ingresos') {
+                    const localIngresosKey = userKey('recim_ingresos');
                     const mapped = rows.map(r => ({
                         id: r.ID || r.id || 'INC-' + Date.now() + Math.random(),
                         date: r.Fecha || r.fecha,
@@ -527,11 +720,12 @@ function importExcelData(file) {
                         category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
                         notes: r.Notas || r.notas || ''
                     }));
-                    localStorage.setItem('recim_ingresos', JSON.stringify(mapped));
+                    localStorage.setItem(localIngresosKey, JSON.stringify(mapped));
                     importedCount++;
                 }
 
                 if (sheetName === 'Egresos') {
+                    const localEgresosKey = userKey('recim_egresos');
                     const mapped = rows.map(r => ({
                         id: r.ID || r.id || 'EXP-' + Date.now() + Math.random(),
                         date: r.Fecha || r.fecha,
@@ -540,16 +734,14 @@ function importExcelData(file) {
                         category: r.Categoría || r.Categoria || r.categoría || r.categoria || 'Importado',
                         notes: r.Notas || r.notas || ''
                     }));
-                    localStorage.setItem('recim_egresos', JSON.stringify(mapped));
+                    localStorage.setItem(localEgresosKey, JSON.stringify(mapped));
                     importedCount++;
                 }
             }
 
             if (importedCount > 0) {
-                // Forzar sincronización con la nube
                 if (window.forceSync) await window.forceSync();
                 showToast(t('toast.import_success'), 'success');
-                // Recargar página actual para ver cambios
                 if (typeof rerenderCurrentPage === 'function') rerenderCurrentPage();
             } else {
                 showToast('⚠️ No se encontraron pestañas válidas para importar', 'warning');

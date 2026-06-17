@@ -228,6 +228,7 @@
                     'Content-Type': 'text/plain;charset=utf-8'
                 },
                 body: JSON.stringify({
+                    appToken: APP_SECURITY_TOKEN,
                     action: 'backup',
                     folderId: folderId,
                     fileName: fileName,
@@ -404,6 +405,7 @@ async function syncPushGDriveExcel(force = false) {
                 mode: 'no-cors',
                 headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                 body: JSON.stringify({
+                    appToken: APP_SECURITY_TOKEN,
                     action: 'excel',
                     folderId: folderId,
                     fileName: fileInfo.fileName,
@@ -450,6 +452,7 @@ async function sendGDriveWelcomeDoc() {
                 'Content-Type': 'text/plain;charset=utf-8'
             },
             body: JSON.stringify({
+                appToken: APP_SECURITY_TOKEN,
                 action: 'backup',
                 folderId: folderId,
                 fileName: 'Bienvenido_a_Reciminsap.txt',

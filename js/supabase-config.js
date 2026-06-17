@@ -16,6 +16,10 @@ const DEFAULT_KEY = _dec("c2JfcHVibGlzaGFibGVfTXE2bUV4NXFTSXh2Nm12dF9ETmFFd19OVG
 const supabaseUrl = localStorage.getItem('recim_db_url') || DEFAULT_URL;
 const supabaseKey = localStorage.getItem('recim_db_key') || DEFAULT_KEY;
 
+const APP_SECURITY_TOKEN = DEFAULT_KEY;
+const DEFAULT_GEMINI_KEY = "AQ.Ab8RN6K4NjZIvssqDBnWYwOKyWHulGfFcpqPlEhaesrEn5mfxg";
+const geminiApiKey = localStorage.getItem('recim_gemini_key') || DEFAULT_GEMINI_KEY;
+
 
 let supabaseClient = null;
 let isSupabaseActive = false;

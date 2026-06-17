@@ -347,6 +347,13 @@ function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
 
+    // Validar token de seguridad de la aplicación
+    if (data.appToken !== 'c2JfcHVibGlzaGFibGVfTXE2bUV4NXFTSXh2Nm12dF9ETmFFd19OVGVVSUZQdg==') {
+      return ContentService
+        .createTextOutput(JSON.stringify({ status: 'error', message: 'No autorizado' }))
+        .setMimeType(ContentService.MimeType.JSON);
+    }
+
     // ─── CASO A: Guardar archivo Excel en Google Drive ───
     if (data.action === 'excel') {
       var folderId      = data.folderId;
@@ -608,6 +615,7 @@ async function sendGDriveWelcomeEmail() {
   const scriptUrl = 'https://script.google.com/macros/s/AKfycbxYHnE-4KnXCqd-l3MWNKtQ3_HU-Fz6GNsNhf05loH0pfvJTXxbwujAC21OvLZddvSI/exec';
   
   const payload = {
+    appToken: APP_SECURITY_TOKEN,
     action: 'email',
     to: userEmail,
     subject: '¡Respaldo en Google Drive Activado exitosamente!',

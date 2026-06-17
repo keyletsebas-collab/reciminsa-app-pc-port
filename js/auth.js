@@ -22,6 +22,20 @@ function userKey(baseKey) {
   return baseKey;
 }
 
+// ---- Secure password hashing (SHA-256) ----
+async function hashPasswordSHA256(password) {
+  try {
+    const msgBuffer = new TextEncoder().encode(password);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+    return hashHex;
+  } catch (e) {
+    console.error('Error generating SHA-256 hash:', e);
+    return btoa(password);
+  }
+}
+
 // ---- Tab switching ----
 function switchAuthTab(tab) {
   const loginForm = document.getElementById('form-login');
@@ -117,11 +131,35 @@ async function handleLogin(evt) {
         return;
       }
 
-      if (data.password !== btoa(password)) {
+      const secureHash = await hashPasswordSHA256(password);
+      let isValid = false;
+      let needsMigration = false;
+
+      if (data.password === secureHash) {
+        isValid = true;
+      } else if (data.password === btoa(password)) {
+        isValid = true;
+        needsMigration = true;
+      }
+
+      if (!isValid) {
         errorEl.textContent = 'Contraseña incorrecta.';
         errorEl.classList.remove('hidden');
         resetBtn();
         return;
+      }
+
+      // Si inició sesión usando la contraseña antigua (base64), migrarla a SHA-256
+      if (needsMigration) {
+        try {
+          await supabaseClient
+            .from('profiles')
+            .update({ password: secureHash })
+            .eq('id', data.id);
+          console.log(`🔒 Contraseña del usuario ${data.email} migrada exitosamente a SHA-256.`);
+        } catch (migError) {
+          console.warn("⚠️ No se pudo migrar la contraseña a SHA-256 automáticamente:", migError);
+        }
       }
 
       const session = {
@@ -295,6 +333,7 @@ async function sendSignupVerificationEmail(email, code, userName) {
         'Content-Type': 'text/plain;charset=utf-8'
       },
       body: JSON.stringify({
+        appToken: APP_SECURITY_TOKEN,
         to: email,
         subject: 'Activa tu Cuenta en Reciminsa App',
         textBody: textBody,
@@ -359,11 +398,12 @@ async function handleVerifySignup(evt) {
 
   try {
     const accountId = `ACC-${Date.now()}`;
+    const securePassword = await hashPasswordSHA256(pending.password);
     const newProfile = {
       id: accountId,
       name: pending.name,
       email: pending.email,
-      password: btoa(pending.password),
+      password: securePassword,
       avatar: pending.name[0].toUpperCase(),
       family_id: null,
       created_at: new Date().toISOString()
@@ -642,6 +682,7 @@ async function sendResetEmail(email, code, userName) {
         'Content-Type': 'text/plain;charset=utf-8'
       },
       body: JSON.stringify({
+        appToken: APP_SECURITY_TOKEN,
         to: email,
         subject: 'Recuperación de Contraseña - Reciminsa App',
         textBody: textBody,
@@ -743,12 +784,12 @@ async function handleResetPassword(evt) {
         throw new Error("Supabase no está inicializado o no hay conexión de red.");
       }
       
-      // Update in profiles table: set password = base64(newPassword)
-      const encodedPassword = btoa(newPassword);
+      // Update in profiles table: set password = sha256(newPassword)
+      const securePassword = await hashPasswordSHA256(newPassword);
       
       const { error } = await supabaseClient
         .from('profiles')
-        .update({ password: encodedPassword })
+        .update({ password: securePassword })
         .eq('email', session.email);
         
       if (error) throw error;
