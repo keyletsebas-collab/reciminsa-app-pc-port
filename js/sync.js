@@ -129,7 +129,7 @@
     /**
      * Push current localStorage data to Supabase.
      */
-    async function syncPushData() {
+    async function syncPushData(force = false) {
         if (!isSupabaseActive || !supabaseClient) return;
         const dbId = getSyncDbId();
         if (!dbId) return;
@@ -158,14 +158,14 @@
             console.log(`☁️ Supabase Push: ${hasData ? 'Datos actualizados' : 'Nube limpiada (vacío)'} para DB: ${dbId}`);
             
             // Sincronizar también con Google Drive (respaldo dual automático)
-            syncPushGDrive(finalData).then(ok => {
+            syncPushGDrive(finalData, force).then(ok => {
                 if (ok) {
                     console.log("☁️ Google Drive: Sincronización automática de respaldo exitosa.");
                 }
             });
 
             // Enviar todos los archivos Excel automáticamente a Google Drive
-            syncPushGDriveExcel().then(ok => {
+            syncPushGDriveExcel(force).then(ok => {
                 if (ok) {
                     console.log("☁️ Google Drive: Envío automático de todos los archivos Excel completado.");
                 }
@@ -193,12 +193,25 @@
     /**
      * Push current database data to Google Drive.
      */
-    async function syncPushGDrive(data) {
+    async function syncPushGDrive(data, force = false) {
         const folderInput = localStorage.getItem(userKey('recim_gdrive_folder'));
         if (!folderInput) return false; // Not configured
 
         const folderId = extractFolderId(folderInput);
         if (!folderId) return false;
+
+        // Check 2-hour rate limit if not forced
+        const now = Date.now();
+        if (!force) {
+            const lastSync = localStorage.getItem(userKey('recim_last_json_sync'));
+            if (lastSync) {
+                const elapsed = now - parseInt(lastSync, 10);
+                if (elapsed < 2 * 60 * 60 * 1000) {
+                    console.log("⏳ Google Drive JSON: Omitiendo auto-envío (límite de 2 horas activo).");
+                    return false;
+                }
+            }
+        }
 
         let scriptUrl = localStorage.getItem(userKey('recim_gdrive_script_url'));
         if (!scriptUrl) {
@@ -237,12 +250,13 @@
             });
 
             console.log('☁️ Google Drive Sync: Respaldo enviado con éxito.');
-        return true;
-    } catch (err) {
-        console.error('Google Drive Sync Push Error:', err);
-        return false;
+            localStorage.setItem(userKey('recim_last_json_sync'), now.toString());
+            return true;
+        } catch (err) {
+            console.error('Google Drive Sync Push Error:', err);
+            return false;
+        }
     }
-}
 
 /**
  * Push ALL Excel files (Facturas, Ingresos, Egresos, Materiales) to Google Drive.
@@ -541,7 +555,7 @@ async function sendGDriveWelcomeDoc() {
      */
     async function forceSync() {
         if (syncPushTimeout) clearTimeout(syncPushTimeout);
-        return await syncPushData();
+        return await syncPushData(true);
     }
 
     /**
