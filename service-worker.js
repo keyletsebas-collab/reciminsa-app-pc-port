@@ -1,9 +1,9 @@
 // =============================================
 // SERVICE WORKER – Reciminsap PWA
-// v9: Fix – external API calls (Supabase, Google) are never intercepted
+// v10: Update Supabase connection keys
 // =============================================
 
-const CACHE_NAME = 'reciminsap-v9';
+const CACHE_NAME = 'reciminsap-v10';
 
 const SAME_ORIGIN_ASSETS = [
   './',

@@ -10,8 +10,8 @@ function _dec(str) {
     }
 }
 
-const DEFAULT_URL = _dec("aHR0cHM6Ly9xY3VkeW1leHNzdmZkZXBwa2hqcy5zdXBhYmFzZS5jbw==");
-const DEFAULT_KEY = _dec("c2JfcHVibGlzaGFibGVfeTFXai01UFNIT0lOLV9wSXZYNVhlZ182U2pwdmpwRg==");
+const DEFAULT_URL = _dec("aHR0cHM6Ly93a3Fnc3ByZ3p0cXhtb3ZvamV3dS5zdXBhYmFzZS5jbw==");
+const DEFAULT_KEY = _dec("c2JfcHVibGlzaGFibGVfTXE2bUV4NXFTSXh2Nm12dF9ETmFFd19OVGVVSUZQdg==");
 
 const supabaseUrl = localStorage.getItem('recim_db_url') || DEFAULT_URL;
 const supabaseKey = localStorage.getItem('recim_db_key') || DEFAULT_KEY;
