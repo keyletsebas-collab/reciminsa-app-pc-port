@@ -460,7 +460,7 @@ function handleLogout() {
 const GMAIL_SENDER = 'Noreplyreciminsasrl@gmail.com';
 
 // Global Google Apps Script Web App URL for Noreplyreciminsasrl@gmail.com
-const GLOBAL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyK5FcmVtRJk8UiX7vTbLKaJ1Vwe1QOnmT2mX8E0rmI_sjAaBf-hg7zCqWuoD6LynCj/exec';
+const GLOBAL_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxYHnE-4KnXCqd-l3MWNKtQ3_HU-Fz6GNsNhf05loH0pfvJTXxbwujAC21OvLZddvSI/exec';
 
 // Local storage key for storing Google Apps Script Web App URL
 function getAppsScriptUrl() {

@@ -1,9 +1,9 @@
 // =============================================
 // SERVICE WORKER – Reciminsap PWA
-// v10: Update Supabase connection keys
+// v11: Update Google Apps Script URL
 // =============================================
 
-const CACHE_NAME = 'reciminsap-v10';
+const CACHE_NAME = 'reciminsap-v11';
 
 const SAME_ORIGIN_ASSETS = [
   './',

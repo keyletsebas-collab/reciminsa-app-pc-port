@@ -604,7 +604,7 @@ async function sendGDriveWelcomeEmail() {
   
   if (!userEmail) return;
 
-  const scriptUrl = 'https://script.google.com/macros/s/AKfycbyK5FcmVtRJk8UiX7vTbLKaJ1Vwe1QOnmT2mX8E0rmI_sjAaBf-hg7zCqWuoD6LynCj/exec';
+  const scriptUrl = 'https://script.google.com/macros/s/AKfycbxYHnE-4KnXCqd-l3MWNKtQ3_HU-Fz6GNsNhf05loH0pfvJTXxbwujAC21OvLZddvSI/exec';
   
   const payload = {
     action: 'email',
