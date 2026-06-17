@@ -73,6 +73,8 @@ function renderHistoryPage(container) {
       </select>
       <input id="history-search" type="text" class="form-input" style="width:auto;min-width:200px;" placeholder="${t('hist.search')}" oninput="filterHistory()" />
       <button class="btn-secondary" onclick="exportFilteredHistoryToExcel()">📊 Exportar Excel</button>
+      <input type="file" id="history-import-excel-input" accept=".xlsx, .xls" style="display:none;" onchange="handleHistoryImportExcel(this)" />
+      <button class="btn-secondary" onclick="document.getElementById('history-import-excel-input').click()">📥 Importar Excel</button>
       <button class="btn-danger" onclick="clearHistory()">${t('hist.clear_all')}</button>
     </div>
 
@@ -388,4 +390,18 @@ function exportFilteredHistoryToExcel() {
     } else {
         exportSelectedDataToExcel({ invoices: true }); 
     }
+}
+
+function handleHistoryImportExcel(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  if (confirm('¿Importar datos desde este archivo? Los datos actuales de ingresos, egresos y facturas podrían ser sobrescritos.')) {
+    if (typeof importExcelData === 'function') {
+      importExcelData(file);
+    } else {
+      showToast('❌ Error: Función de importación no disponible.', 'error');
+    }
+  }
+  input.value = '';
 }
