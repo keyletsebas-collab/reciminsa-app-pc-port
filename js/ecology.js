@@ -122,8 +122,10 @@ function renderEcologyPage(container) {
   const stats = calculateEcoImpact(invoices);
   const clients = getClients();
 
-  // Sort unique clients who have invoices
-  const activeClientNames = [...new Set(invoices.map(inv => inv.company.trim()))].sort();
+  // Get unique client names from both the client list and existing invoices
+  const clientNamesFromDB = clients.map(c => c.name ? c.name.trim() : '');
+  const clientNamesFromInvoices = invoices.map(inv => inv.company ? inv.company.trim() : '');
+  const activeClientNames = [...new Set([...clientNamesFromDB, ...clientNamesFromInvoices])].filter(Boolean).sort();
 
   container.innerHTML = `
     <div class="page-header">
