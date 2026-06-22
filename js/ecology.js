@@ -3,6 +3,20 @@
    Depends on: invoices.js, clients.js, html2pdf
    ============================================= */
 
+// Basic HTML escaping
+function escapeHTMLString(str) {
+    if (!str) return '';
+    return String(str).replace(/[&<>'"]/g, 
+        tag => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            "'": '&#39;',
+            '"': '&quot;'
+        }[tag] || tag)
+    );
+}
+
 // Coefficients for environmental savings per 1 kg of material
 const ECO_COEFFICIENTS = {
   paper:   { name: 'Papel/Cartón', trees: 0.017, water: 26,  energy: 4.0,  co2: 0.9 },
