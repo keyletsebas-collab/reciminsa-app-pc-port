@@ -29,6 +29,8 @@ const TRANSLATIONS = {
         'page.ajustes': 'Ajustes',
         'page.clientes': 'Clientes',
         'page.empresas': '🏢 Zona de Empresas',
+        'page.ecologia': '🌱 Aporte Ecológico',
+        'page.precios': '💹 Precios del Mercado',
 
         // Common
         'btn.save': 'Guardar',
@@ -284,6 +286,8 @@ const TRANSLATIONS = {
         'page.ajustes': 'Settings',
         'page.clientes': 'Clients',
         'page.empresas': '🏢 Business Zone',
+        'page.ecologia': '🌱 Eco Contribution',
+        'page.precios': '💹 Market Prices',
 
         'btn.save': 'Save',
         'btn.cancel': 'Cancel',
@@ -527,6 +531,8 @@ const TRANSLATIONS = {
         'page.ingresos': 'Receitas',
         'page.egresos': 'Despesas',
         'page.ajustes': 'Configurações',
+        'page.ecologia': '🌱 Contribuição Ecológica',
+        'page.precios': '💹 Preços de Mercado',
 
         'btn.save': 'Salvar',
         'btn.cancel': 'Cancelar',

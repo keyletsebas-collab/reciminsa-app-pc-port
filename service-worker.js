@@ -1,9 +1,9 @@
 // =============================================
-// SERVICE WORKER – Reciminsap PWA
+// SERVICE WORKER – Reciminsaap PWA
 // v14: Upgrade Excel exports with styling, currencies, auto column widths, formulas
 // =============================================
 
-const CACHE_NAME = 'reciminsap-v14';
+const CACHE_NAME = 'reciminsaap-v19';
 
 const SAME_ORIGIN_ASSETS = [
   './',
@@ -23,6 +23,9 @@ const SAME_ORIGIN_ASSETS = [
   './js/history.js',
   './js/finance.js',
   './js/settings.js',
+  './js/ecology.js',
+  './js/prices.js',
+  './js/security.js',
   './js/sidebar.js',
   './js/supabase-config.js',
   './js/excel-utils.js',

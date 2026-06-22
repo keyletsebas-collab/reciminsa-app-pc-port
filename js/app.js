@@ -29,7 +29,9 @@ const PAGE_TITLE_KEYS = {
     ingresos: 'page.ingresos',
     egresos: 'page.egresos',
     ajustes: 'page.ajustes',
-    empresas: 'page.empresas'
+    empresas: 'page.empresas',
+    ecologia: 'page.ecologia',
+    precios: 'page.precios'
 };
 
 // ---- Current page tracker (used by sync.js) ----
@@ -65,11 +67,31 @@ function rerenderCurrentPage() {
         case 'ingresos': renderIngresosPage(target); break;
         case 'egresos': renderEgresosPage(target); break;
         case 'ajustes': renderSettingsPage(target); break;
+        case 'ecologia': renderEcologyPage(target); break;
+        case 'precios': renderPricesPage(target); break;
     }
 }
 
 // ---- Navigation ----
 function navigate(pageName, subTab = null) {
+    // Block navigation if subscription is expired or device is cloned
+    if (typeof verifyDeviceAndSubscription === 'function') {
+        const verification = verifyDeviceAndSubscription();
+        if (!verification.success) {
+            checkSubscriptionAndDevice();
+            return;
+        }
+    }
+
+    // Block navigation if module is disabled by the user
+    if (pageName !== 'historial' && pageName !== 'ajustes' && typeof getModuleConfig === 'function') {
+        const config = getModuleConfig();
+        if (config[pageName] === false) {
+            navigate('historial');
+            return;
+        }
+    }
+
     // Hide all pages
     document.querySelectorAll('.page').forEach(p => p.classList.add('hidden'));
 
@@ -104,6 +126,8 @@ function navigate(pageName, subTab = null) {
         case 'ingresos': renderIngresosPage(target); break;
         case 'egresos': renderEgresosPage(target); break;
         case 'ajustes': renderSettingsPage(target); break;
+        case 'ecologia': renderEcologyPage(target); break;
+        case 'precios': renderPricesPage(target); break;
     }
 }
 
@@ -119,6 +143,11 @@ function setTopbarDate() {
 
 // ---- Init app after login ----
 function initApp(user) {
+    // Check device IMEI fingerprint and subscription state
+    if (typeof checkSubscriptionAndDevice === 'function') {
+        checkSubscriptionAndDevice();
+    }
+
     // Hide auth, show app
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-screen').classList.remove('hidden');
@@ -129,6 +158,11 @@ function initApp(user) {
     document.getElementById('sidebar-avatar').textContent = (user.avatar || (user.name || 'U')[0]).toUpperCase();
 
     setTopbarDate();
+    
+    // Ensure modules visibility is applied based on user config
+    if (typeof applyModuleVisibility === 'function') {
+        applyModuleVisibility();
+    }
     
     // Default page (Restricted to Ingresos/Egresos on mobile)
     const defaultPage = isMobile() ? 'ingresos' : 'historial';
@@ -149,6 +183,11 @@ function initApp(user) {
 // ---- Restore session on load ----
 document.addEventListener('DOMContentLoaded', () => {
     applySettings(); // apply color theme + dark mode before anything renders
+
+    // Verify subscription and device integrity on load
+    if (localStorage.getItem('recim_session') && typeof checkSubscriptionAndDevice === 'function') {
+        checkSubscriptionAndDevice();
+    }
 
     const session = localStorage.getItem('recim_session');
     if (session) {

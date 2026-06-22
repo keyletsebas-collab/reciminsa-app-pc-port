@@ -529,7 +529,7 @@ function importExcelData(file) {
                     // Endpoint oficial de la API de Gemini
                     const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiApiKey}`;
                     
-                    const systemPrompt = `Eres un asistente de inteligencia artificial experto en migración y limpieza de datos para la aplicación Reciminsap (gestión de reciclaje y finanzas).
+                    const systemPrompt = `Eres un asistente de inteligencia artificial experto en migración y limpieza de datos para la aplicación Reciminsaap (gestión de reciclaje y finanzas).
 Tu tarea es analizar los datos crudos extraídos de un archivo Excel importado y mapearlos de forma inteligente a nuestra estructura de datos de base de datos.
 
 Nuestra estructura de datos consta de 3 colecciones:

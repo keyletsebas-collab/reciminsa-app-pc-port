@@ -1,4 +1,4 @@
-package com.reciminsa.app;
+package com.reciminsaap;
 
 import com.getcapacitor.BridgeActivity;
 

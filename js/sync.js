@@ -405,18 +405,18 @@ async function syncPushGDriveExcel(force = false) {
     // Define the Excel files to send
     const excelFiles = [
         {
-            fileName: `Reciminsap_Facturas_${accountId}_${timestampLabel}.xlsx`,
+            fileName: `Reciminsaap_Facturas_${accountId}_${timestampLabel}.xlsx`,
             sheets: [{ name: 'Facturas', headers: invHeaders, rows: invRows }]
         },
         {
-            fileName: `Reciminsap_Finanzas_${accountId}_${timestampLabel}.xlsx`,
+            fileName: `Reciminsaap_Finanzas_${accountId}_${timestampLabel}.xlsx`,
             sheets: [
                 { name: 'Ingresos', headers: incHeaders, rows: incRows },
                 { name: 'Egresos', headers: expHeaders, rows: expRows }
             ]
         },
         {
-            fileName: `Reciminsap_Materiales_${accountId}_${timestampLabel}.xlsx`,
+            fileName: `Reciminsaap_Materiales_${accountId}_${timestampLabel}.xlsx`,
             sheets: [{ name: 'Catálogo_Materiales', headers: matHeaders, rows: matRows }]
         }
     ];
@@ -480,8 +480,8 @@ async function sendGDriveWelcomeDoc() {
                 appToken: APP_SECURITY_TOKEN,
                 action: 'backup',
                 folderId: folderId,
-                fileName: 'Bienvenido_a_Reciminsap.txt',
-                content: '¡Bienvenido a Reciminsap!\n\nTu carpeta de Google Drive ha sido vinculada correctamente.\nAquí se guardarán tus copias de seguridad de datos (.json) y tus reportes de Excel (.xlsx) automáticamente.\n\nFecha de vinculación: ' + new Date().toLocaleString()
+                fileName: 'Bienvenido_a_Reciminsaap.txt',
+                content: '¡Bienvenido a Reciminsaap!\n\nTu carpeta de Google Drive ha sido vinculada correctamente.\nAquí se guardarán tus copias de seguridad de datos (.json) y tus reportes de Excel (.xlsx) automáticamente.\n\nFecha de vinculación: ' + new Date().toLocaleString()
             })
         });
         return true;

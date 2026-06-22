@@ -1,6 +1,6 @@
 {
-    "name": "Reciminsap",
-    "short_name": "Reciminsap",
+    "name": "Reciminsaap",
+    "short_name": "Reciminsaap",
     "description": "Gestión inteligente de materiales reciclables",
     "start_url": "/index.html",
     "display": "standalone",

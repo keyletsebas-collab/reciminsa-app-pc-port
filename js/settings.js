@@ -39,6 +39,18 @@ function applySettings() {
   const s = getSettings();
   if (s.colorTheme) applyColorTheme(s.colorTheme, false);
   if (s.darkMode === false) document.documentElement.setAttribute('data-theme', 'light');
+  
+  // Apply custom app brand name if set
+  const brandEl = document.querySelector('.sidebar-brand');
+  if (brandEl) {
+    brandEl.textContent = s.companyName || 'Reciminsaap';
+  }
+  
+  // Apply custom logo if set
+  const logoEl = document.getElementById('sidebar-logo-img');
+  if (logoEl) {
+    logoEl.src = s.companyLogo || 'logo-no-white-lines.png';
+  }
 }
 
 function applyColorTheme(themeId, save = true) {
@@ -114,7 +126,8 @@ function renderSettingsPage(container) {
           <span class="settings-item-label">${t('set.provider')}</span>
           <span class="settings-item-value">${session.provider || '—'}</span>
         </div>
-        <div class="settings-item" style="margin-top:12px;">
+        <div class="settings-item" style="margin-top:12px; flex-direction:column; gap:8px;">
+          <button class="btn-primary" style="display:none; width:100%; justify-content:center; background:linear-gradient(135deg, var(--clr-primary), #10b981);" onclick="if(window.forceOpenPaywall) forceOpenPaywall()">💎 Cambiar Suscripción / Canjear Código</button>
           <button class="btn-danger" style="width:100%;justify-content:center;" onclick="handleLogout()">🚪 Cerrar sesión</button>
         </div>
       </div>
@@ -181,10 +194,28 @@ function renderSettingsPage(container) {
         </div>
       </div>
 
+      <!-- ===== MÓDULOS ACTIVOS ===== -->
+      <div class="card card--elevated settings-section">
+        <h3 class="settings-section-title">🧩 Módulos Activos</h3>
+        <p style="font-size:0.8rem; color:var(--clr-text-muted); margin-bottom:12px;">Activa o desactiva las secciones de la aplicación que no utilices.</p>
+        <div style="display:flex; flex-direction:column; gap:12px; background:var(--clr-surface-3); border-radius:var(--r-md); padding:16px;">
+          ${renderModulesChecklist()}
+        </div>
+      </div>
+
       <!-- ===== COMPARTIR EN FAMILIA ===== -->
       <div class="card card--elevated settings-section">
         <h3 class="settings-section-title">👪 Compartir en Familia</h3>
         <div id="settings-family-container">
+          <div style="font-size:0.85rem;color:var(--clr-text-muted);">Cargando...</div>
+        </div>
+      </div>
+
+      <!-- ===== SUSCRIPCIÓN Y LICENCIA (ANTI-CLONACIÓN) ===== -->
+      <!-- Oculto temporalmente porque el sistema de cobro está archivado -->
+      <div class="card card--elevated settings-section" style="display: none;">
+        <h3 class="settings-section-title">💳 Suscripción y Licencia</h3>
+        <div id="settings-subscription-container">
           <div style="font-size:0.85rem;color:var(--clr-text-muted);">Cargando...</div>
         </div>
       </div>
@@ -260,6 +291,55 @@ function renderSettingsPage(container) {
       </div>
 
 
+      <!-- ===== PERSONALIZAR APP (MARCA BLANCA) ===== -->
+      <div class="card card--elevated settings-section" style="grid-column: span 2;">
+        <h3 class="settings-section-title">🏢 Personalizar App (Marca Blanca)</h3>
+        
+        <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: var(--sp-lg); align-items: start;">
+          <!-- Columna Izquierda: Formulario -->
+          <div style="display:flex; flex-direction:column; gap:14px;">
+            <div class="form-group">
+              <label class="form-label" for="set-company-name">Nombre de la App (GUI)</label>
+              <input id="set-company-name" type="text" class="form-input" placeholder="Ej: Mi Recicladora" value="${settings.companyName || ''}" onchange="saveCompanyNameSetting(this.value)" />
+              <p style="font-size:0.75rem; color:var(--clr-text-muted); margin-top:4px;">Aparecerá en el menú lateral y como nombre de la empresa emisora en facturas.</p>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="set-company-rnc">RNC de tu Compañía</label>
+              <div style="display:flex; gap: 8px;">
+                <input id="set-company-rnc" type="text" class="form-input" placeholder="9 u 11 dígitos" value="${settings.companyRNC || ''}" onchange="saveCompanyRNCSetting(this.value)" style="flex:1;" />
+                <button class="btn-secondary" onclick="autoFillSettingsCompanyDGII()" style="margin:0; padding: 0 15px;" title="Buscar en DGII" type="button">🔍</button>
+                <button class="btn-danger" onclick="clearSettingsCompanyRNC()" style="margin:0; padding: 0 12px; display:flex; align-items:center; justify-content:center; background: var(--clr-danger-soft); border-color: var(--clr-danger);" title="Eliminar RNC" type="button">🗑</button>
+              </div>
+              <p style="font-size:0.75rem; color:var(--clr-text-muted); margin-top:4px;">Se usará en la generación de facturas (PDF).</p>
+            </div>
+            
+            <div class="form-group">
+              <label class="form-label" for="set-company-logo">Logo de la App / Membrete (Opcional)</label>
+              <input id="set-company-logo" type="file" accept="image/*" class="form-input" onchange="handleSettingsLogoUpload(this)" />
+              <p style="font-size:0.75rem; color:var(--clr-text-muted); margin-top:4px;">Aparecerá en el panel lateral y en la cabecera de las facturas (PDF). Formato recomendado: PNG transparente.</p>
+            </div>
+          </div>
+          
+          <!-- Columna Derecha: Vista Previa del Logo -->
+          <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; min-height: 180px; border: 1px dashed var(--clr-primary); border-radius: var(--r-md); background: var(--clr-surface-2); padding: 20px; position:relative;">
+            <div style="font-size:0.8rem; color:var(--clr-text-muted); font-weight:600; text-transform:uppercase; margin-bottom:12px; position:absolute; top:12px;">Vista Previa del Logo</div>
+            <div id="set-logo-preview-container" style="display:flex; align-items:center; justify-content:center; width:100%; height:120px; margin-top:20px;">
+              ${settings.companyLogo 
+                ? `<img src="${settings.companyLogo}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />` 
+                : `<span style="font-size: 0.9rem; color: var(--clr-text-muted);">Sin Logo</span>`}
+            </div>
+          </div>
+        </div>
+        
+        <!-- Botón Restaurar Todo -->
+        <div style="display:flex; justify-content:flex-end; margin-top:20px; padding-top:15px; border-top:1px solid var(--clr-border);">
+          <button class="btn-secondary" onclick="restoreWhiteLabelToOriginal()" style="color: #ef4444; border-color: #ef4444; background: rgba(239, 68, 68, 0.05); font-weight:600; display:flex; align-items:center; gap:6px;">
+            🔄 Restaurar Todo al Original
+          </button>
+        </div>
+      </div>
+
       <!-- ===== INFORMACIÓN ===== -->
       <div class="card card--elevated settings-section" style="grid-column: span 2;">
         <h3 class="settings-section-title">${t('set.info')}</h3>
@@ -330,6 +410,9 @@ function renderSettingsPage(container) {
   // Render family section
   setTimeout(() => renderFamilySection(), 0);
 
+  // Render subscription section
+  setTimeout(() => renderSubscriptionSettings(), 0);
+
   // Update Google Drive status badge
   setTimeout(() => updateGDriveStatusDOM(), 0);
 
@@ -338,7 +421,7 @@ function renderSettingsPage(container) {
 // ---- Google Drive Backup Handlers ----
 
 const GDRIVE_SCRIPT_CODE = `/**
- * Google Apps Script – Reciminsap
+ * Google Apps Script – Reciminsaap
  * Maneja: respaldo JSON, archivos Excel (.xlsx), y envío de correos.
  * Despliega desde: https://script.google.com  → Nuevo proyecto → Pegar → Implementar → App web
  */
@@ -357,7 +440,7 @@ function doPost(e) {
     // ─── CASO A: Guardar archivo Excel en Google Drive ───
     if (data.action === 'excel') {
       var folderId      = data.folderId;
-      var fileName      = data.fileName;          // ej: Reciminsap_Facturas_xxx_2026-06-17.xlsx
+      var fileName      = data.fileName;          // ej: Reciminsaap_Facturas_xxx_2026-06-17.xlsx
       var base64Content = data.base64Content;     // string base64 del .xlsx
 
       var folder = folderId
@@ -1264,5 +1347,329 @@ async function handleLeaveFamily() {
   showToast('👋 Has salido de la familia', 'success');
   renderFamilySection();
 }
+
+// ---- White Label settings handlers ----
+function saveCompanyNameSetting(val) {
+  const name = val.trim();
+  saveSetting('companyName', name);
+  
+  // Update sidebar brand title immediately
+  const brandEl = document.querySelector('.sidebar-brand');
+  if (brandEl) {
+    brandEl.textContent = name || 'Reciminsaap';
+  }
+  
+  showToast('✅ Nombre de la App actualizado', 'success');
+}
+
+function saveCompanyRNCSetting(val) {
+  const rnc = val.trim();
+  saveSetting('companyRNC', rnc);
+  showToast('✅ RNC de la Compañía actualizado', 'success');
+}
+
+async function autoFillSettingsCompanyDGII() {
+  const rncEl = document.getElementById('set-company-rnc');
+  if (!rncEl) return;
+  const val = rncEl.value.trim();
+  if (!val) {
+    showToast('Ingresa un RNC o Cédula primero', 'warning');
+    return;
+  }
+  const data = await fetchDGIIData(val);
+  if (data) {
+    const nameEl = document.getElementById('set-company-name');
+    if (nameEl) {
+      nameEl.value = data.name;
+      saveCompanyNameSetting(data.name);
+    }
+    rncEl.value = val;
+    saveCompanyRNCSetting(val);
+  }
+}
+
+function clearSettingsCompanyRNC() {
+  const rncEl = document.getElementById('set-company-rnc');
+  if (rncEl) rncEl.value = '';
+  saveSetting('companyRNC', '');
+  showToast('🗑 RNC eliminado de la configuración', 'success');
+}
+
+function handleSettingsLogoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const base64Data = e.target.result;
+    saveSetting('companyLogo', base64Data);
+    
+    // Update preview container
+    const previewContainer = document.getElementById('set-logo-preview-container');
+    if (previewContainer) {
+      previewContainer.innerHTML = `<img src="${base64Data}" style="max-width: 100%; max-height: 100%; object-fit: contain;" />`;
+    }
+    
+    // Update sidebar logo image immediately
+    const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+    if (sidebarLogoImg) {
+      sidebarLogoImg.src = base64Data;
+    }
+    
+    showToast('✅ Logo de la App actualizado', 'success');
+  };
+  reader.readAsDataURL(file);
+}
+
+function restoreWhiteLabelToOriginal() {
+  if (!confirm('¿Restaurar todas las configuraciones de marca blanca al original?')) return;
+  
+  saveSetting('companyName', '');
+  saveSetting('companyRNC', '');
+  saveSetting('companyLogo', '');
+  
+  // Reset form fields
+  const nameEl = document.getElementById('set-company-name');
+  if (nameEl) nameEl.value = '';
+  
+  const rncEl = document.getElementById('set-company-rnc');
+  if (rncEl) rncEl.value = '';
+  
+  const fileEl = document.getElementById('set-company-logo');
+  if (fileEl) fileEl.value = '';
+  
+  const previewContainer = document.getElementById('set-logo-preview-container');
+  if (previewContainer) {
+    previewContainer.innerHTML = `<span style="font-size: 0.9rem; color: var(--clr-text-muted);">Sin Logo</span>`;
+  }
+  
+  // Reset sidebar brand name and logo image
+  const brandEl = document.querySelector('.sidebar-brand');
+  if (brandEl) brandEl.textContent = 'Reciminsaap';
+  
+  const sidebarLogoImg = document.getElementById('sidebar-logo-img');
+  if (sidebarLogoImg) {
+    sidebarLogoImg.src = 'logo-no-white-lines.png';
+  }
+  
+  showToast('🔄 Marca blanca restaurada al original', 'success');
+}
+
+// ==========================================================================
+// SUBSCRIPTION AND DEVICE LICENSE HANDLERS
+// ==========================================================================
+
+function renderSubscriptionSettings() {
+  const container = document.getElementById('settings-subscription-container');
+  if (!container) return;
+
+  if (typeof getSubscriptionState !== 'function' || typeof getDeviceUUID !== 'function') {
+    container.innerHTML = `<p style="font-size:0.8rem; color:var(--clr-text-muted);">Módulo de seguridad no cargado.</p>`;
+    return;
+  }
+
+  const state = getSubscriptionState();
+  const deviceUuid = getDeviceUUID();
+
+  const planNames = {
+    mensual: 'Plan Mensual (30 Días)',
+    anual: 'Plan Anual (1 Año)',
+    lifetime: 'Plan De Por Vida (Lifetime)'
+  };
+
+  const planName = state.plan ? (planNames[state.plan] || state.plan) : 'Sin Suscripción Activa';
+  
+  let expiresLabel = 'Expirado';
+  let daysRemainingLabel = '';
+  
+  if (state.expiresAt === 'lifetime') {
+    expiresLabel = 'De por vida (Acceso Ilimitado)';
+  } else if (state.expiresAt > 0) {
+    const date = new Date(state.expiresAt);
+    expiresLabel = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    
+    const diff = state.expiresAt - Date.now();
+    const days = Math.ceil(diff / (24 * 3600 * 1000));
+    if (days > 0) {
+      daysRemainingLabel = `<span class="badge badge--green" style="font-size:0.7rem; padding: 2px 6px;">${days} días restantes</span>`;
+    } else {
+      daysRemainingLabel = `<span class="badge badge--red" style="font-size:0.7rem; padding: 2px 6px;">Expirado</span>`;
+    }
+  }
+
+  container.innerHTML = `
+    <div style="display:flex; flex-direction:column; gap:12px; font-size:0.8rem;">
+      <div class="settings-item" style="padding:4px 0;">
+        <span class="settings-item-label">Plan Activo</span>
+        <span class="settings-item-value" style="font-weight:700; color:#22c55e;">
+          ${planName}
+        </span>
+      </div>
+      
+      <div class="settings-item" style="padding:4px 0;">
+        <span class="settings-item-label">Fecha de Vencimiento</span>
+        <span class="settings-item-value" style="font-weight:600; display:flex; align-items:center; gap:8px;">
+          <span>${expiresLabel}</span>
+          ${daysRemainingLabel}
+        </span>
+      </div>
+
+      <div class="settings-item" style="padding:4px 0;">
+        <span class="settings-item-label">Centro de Costos</span>
+        <span class="settings-item-value" style="font-family:monospace; font-weight:700;">
+          ${state.costCenter || 'No Configurado'}
+        </span>
+      </div>
+
+      <div class="settings-item" style="padding:4px 0;">
+        <span class="settings-item-label">Código Aplicado</span>
+        <span class="settings-item-value" style="font-family:monospace; font-weight:700; color:#fbbf24;">
+          ${state.promoCode || 'Ninguno'}
+        </span>
+      </div>
+
+      <div class="settings-item" style="padding:4px 0; border-top:1px solid var(--clr-border); padding-top:8px; flex-direction:column; align-items:flex-start; gap:4px;">
+        <span class="settings-item-label" style="font-size:0.7rem; color:var(--clr-text-muted);">ID de Dispositivo (Firma de Seguridad)</span>
+        <span class="settings-item-value" style="font-family:monospace; font-size:0.7rem; overflow-wrap:break-word; width:100%; color:#cbd5e1;">
+          ${deviceUuid}
+        </span>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-primary" onclick="triggerSubscriptionRenewal()" style="flex:1; justify-content:center; padding:8px; font-size:0.75rem; font-weight:700; margin:0;">
+          🔄 Renovar / Cambiar
+        </button>
+        <button class="btn-secondary" onclick="triggerDeviceUnlink()" style="flex:1; justify-content:center; padding:8px; font-size:0.75rem; font-weight:700; border-color:#ef4444; color:#ef4444; background:rgba(239,68,68,0.05); margin:0;">
+          🔓 Desvincular Cuenta
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function triggerSubscriptionRenewal() {
+  const confirmation = confirm("¿Deseas renovar o cambiar tu plan de suscripción?\n\nEsto te redirigirá a la pasarela de planes.");
+  if (!confirmation) return;
+
+  const state = getSubscriptionState();
+  state.plan = null; // Clear active plan to trigger paywall
+  state.expiresAt = 0;
+  saveSubscriptionState(state);
+
+  window.location.reload();
+}
+
+function triggerDeviceUnlink() {
+  const confirmation = confirm("¿Estás seguro de que deseas desvincular esta cuenta de este dispositivo?\n\nLa sesión se cerrará y deberás reactivar la licencia en otro dispositivo.");
+  if (!confirmation) return;
+
+  const state = getSubscriptionState();
+  state.registeredDeviceId = ''; // Clear registered device ID
+  saveSubscriptionState(state);
+
+  handleLogout(); // logs out the user
+}
+
+// =============================================
+// MODULE MANAGEMENT
+// =============================================
+const TOGGLEABLE_MODULES = [
+  { id: 'bitacoras', label: '🚛 Bitácoras de Recogida' },
+  { id: 'facturas', label: '🧾 Facturación' },
+  { id: 'codigos', label: '🏷️ Códigos de Materiales' },
+  { id: 'clientes', label: '👥 Clientes' },
+  { id: 'ingresos', label: '📈 Ingresos' },
+  { id: 'egresos', label: '📉 Egresos' },
+  { id: 'empresas', label: '🏢 Registro de Empresas' },
+  { id: 'ecologia', label: '🌱 Aporte Ecológico' }
+];
+
+function getModuleConfig() {
+  const sessionStr = localStorage.getItem('recim_session');
+  let accountId = 'default';
+  if (sessionStr) {
+    try { accountId = JSON.parse(sessionStr).accountId || 'default'; } catch(e){}
+  }
+  const key = `recim_modules_${accountId}`;
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    try { return JSON.parse(saved); } catch(e){}
+  }
+  
+  // Default: all enabled
+  const config = {};
+  TOGGLEABLE_MODULES.forEach(m => config[m.id] = true);
+  return config;
+}
+
+function saveModuleConfig(config) {
+  const sessionStr = localStorage.getItem('recim_session');
+  let accountId = 'default';
+  if (sessionStr) {
+    try { accountId = JSON.parse(sessionStr).accountId || 'default'; } catch(e){}
+  }
+  localStorage.setItem(`recim_modules_${accountId}`, JSON.stringify(config));
+  applyModuleVisibility();
+}
+
+function toggleModule(moduleId, isEnabled) {
+  const config = getModuleConfig();
+  config[moduleId] = isEnabled;
+  saveModuleConfig(config);
+}
+
+function renderModulesChecklist() {
+  const config = getModuleConfig();
+  return TOGGLEABLE_MODULES.map(m => `
+    <div style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px; border-bottom:1px solid rgba(255,255,255,0.05);">
+      <span style="font-size:0.9rem; font-weight:600;">${m.label}</span>
+      <label class="toggle-switch">
+        <input type="checkbox" ${config[m.id] ? 'checked' : ''} onchange="toggleModule('${m.id}', this.checked)" />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+  `).join('');
+}
+
+function applyModuleVisibility() {
+  const config = getModuleConfig();
+  
+  // Apply to sidebar links
+  document.querySelectorAll('.sidebar-link').forEach(link => {
+    const pageId = link.dataset.page;
+    if (!pageId) return;
+    // Keep historial and ajustes always visible
+    if (pageId === 'historial' || pageId === 'ajustes') return;
+    
+    if (config[pageId] === false) {
+      link.style.display = 'none';
+    } else {
+      link.style.display = 'flex';
+    }
+  });
+
+  // Apply to any potential bottom-nav items if they exist
+  document.querySelectorAll('.bottom-nav-item').forEach(link => {
+    const pageId = link.dataset.page;
+    if (!pageId) return;
+    if (pageId === 'historial' || pageId === 'ajustes') return;
+    
+    if (config[pageId] === false) {
+      link.style.display = 'none';
+    } else {
+      link.style.display = 'flex';
+    }
+  });
+
+  // If the user is currently on a disabled page, redirect to historial
+  const currentPage = localStorage.getItem('recim_current_page') || 'historial';
+  if (currentPage !== 'historial' && currentPage !== 'ajustes' && config[currentPage] === false) {
+    navigate('historial');
+  }
+}
+
+// Ensure globally accessible
+window.toggleModule = toggleModule;
+window.applyModuleVisibility = applyModuleVisibility;
 
 
