@@ -275,7 +275,7 @@ function renderSingleInvoiceCard(inv) {
       <div style="display:flex; align-items:center;">
         <div class="history-card-total" style="color:${totalColor};">${displayTotal}</div>
         ${(!isIngreso && !isEgreso) ? `
-          <button class="btn-secondary" onclick="event.stopPropagation(); ${isBasica ? 'downloadInvoicePDF' : 'generatePDFInvoice'}(${isBasica ? 'getAllHistoryItems' : 'getAllInvoices'}().find(i => i.id === '${inv.id}'))" style="margin-left: 12px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600;" title="Descargar PDF">📄 PDF</button>
+          <button class="btn-secondary" onclick="event.stopPropagation(); generateInvoicePDF(${isBasica ? 'getAllHistoryItems' : 'getAllInvoices'}().find(i => i.id === '${inv.id}'))" style="margin-left: 12px; padding: 6px 12px; font-size: 0.8rem; font-weight: 600;" title="Descargar PDF">📄 PDF</button>
         ` : ''}
       </div>
       <span class="history-card-chevron" style="margin-left: 12px;">▼</span>
@@ -301,7 +301,7 @@ function renderSingleInvoiceCard(inv) {
         ${inv.notes ? `<p style="margin-top:12px; font-size:0.83rem; color:var(--clr-text-secondary);">📝 ${inv.notes}</p>` : ''}
       </div>
       <div style="margin-top:14px; display:flex; justify-content:flex-end; gap:8px;">
-        ${(!isIngreso && !isEgreso) ? `<button class="btn-secondary" onclick="${isBasica ? 'downloadInvoicePDF' : 'generatePDFInvoice'}(${isBasica ? 'getAllHistoryItems' : 'getAllInvoices'}().find(i => i.id === '${inv.id}'))">📄 PDF</button>` : ''}
+        ${(!isIngreso && !isEgreso) ? `<button class="btn-secondary" onclick="generateInvoicePDF(${isBasica ? 'getAllHistoryItems' : 'getAllInvoices'}().find(i => i.id === '${inv.id}'))">📄 PDF</button>` : ''}
         <button class="btn-danger" onclick="deleteHistoryItem('${inv.type}', '${inv.id}')">${t('hist.del_inv')}</button>
       </div>
     </div>
