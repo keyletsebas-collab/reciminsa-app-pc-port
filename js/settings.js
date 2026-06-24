@@ -349,15 +349,7 @@ function renderSettingsPage(container) {
             <span class="settings-item-label">${t('set.app_name')}</span>
             <span class="settings-item-value">Reciminsa</span>
           </div>
-          <div class="settings-item">
-            <span class="settings-item-label">${t('set.version')}</span>
-            <span class="settings-item-value"><span style="background: linear-gradient(90deg, #007fff, #00d2ff, #007fff); background-size: 200% auto; color: white; font-weight: 800; padding: 4px 10px; border-radius: 8px; animation: textShine 3s linear infinite;">🚀 v1.0.9</span></span>
-          </div>
-          <div class="settings-item" style="grid-column: span 2; padding-top: 0; margin-top: -8px;">
-            <p style="font-size: 0.8rem; color: var(--clr-text-muted); font-style: italic;">
-              ℹ️ ${t('set.version_msg')}
-            </p>
-          </div>
+
           <div class="settings-item">
             <span class="settings-item-label">${t('set.platform')}</span>
             <span class="settings-item-value">${ (window.chrome && window.chrome.webview) ? 'App en Windows' : (navigator.userAgent.includes('Android') ? 'App en Android' : 'Web (PWA)') }</span>
