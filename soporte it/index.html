@@ -122,9 +122,9 @@
       </div>
 
       <!-- Input -->
-      <form id="chat-form" class="chat-form" onsubmit="sendChatMessage(event)">
-        <input type="text" id="chat-input" class="form-input" placeholder="Escribe un mensaje..." style="flex:1;" required autocomplete="off" />
-        <button type="submit" class="btn-primary" style="padding:8px 15px;" id="btn-send-msg">
+      <form id="chat-form" class="chat-form" style="padding:15px; border-top:1px solid var(--clr-border); background:var(--clr-surface-2); display:flex; gap:10px;" onsubmit="sendChatMessage(event)">
+        <input type="text" id="chat-input" class="form-input" placeholder="Escribe un mensaje..." style="flex:1; padding:15px; font-size:1rem;" required autocomplete="off" />
+        <button type="submit" class="btn-primary" style="padding:15px 25px; font-size:1rem;" id="btn-send-msg">
           <span>Enviar</span>
           <div class="btn-spinner hidden" id="spinner-send"></div>
         </button>
