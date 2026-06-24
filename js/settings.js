@@ -2,7 +2,7 @@
    SETTINGS.JS – Página de Ajustes de la App
    ============================================= */
 
-const APP_VERSION = 'v1.0.9';
+const APP_VERSION = 'v1.0.14';
 
 function isElectron() {
   return typeof navigator === 'object' && typeof navigator.userAgent === 'string' && navigator.userAgent.includes('Electron');
@@ -95,13 +95,13 @@ function renderSettingsPage(container) {
           <div class="settings-avatar" id="settings-avatar-el">${(session.avatar || (session.name || 'U')[0]).toUpperCase()}</div>
           <div class="settings-profile-info">
             <div style="display:flex;align-items:center;gap:8px;">
-              <div class="settings-profile-name" id="settings-display-name">${session.name || 'Usuario'}</div>
+              <div class="settings-profile-name" id="settings-display-name">${(session.name || 'Usuario').split(' | ')[0].trim()}</div>
               <button class="btn-secondary" style="padding:3px 8px;font-size:0.75rem;" onclick="showNameEditor()">✏️</button>
             </div>
             <div id="settings-name-editor" style="display:none;margin-top:8px;">
               <div style="display:flex;gap:8px;align-items:center;">
                 <input id="settings-name-input" type="text" class="form-input"
-                       value="${session.name || ''}"
+                       value="${(session.name || '').split(' | ')[0].trim()}"
                        style="flex:1;padding:6px 10px;"
                        onkeydown="if(event.key==='Enter') saveAccountName(); if(event.key==='Escape') hideNameEditor()" />
                 <button class="btn-primary" style="padding:6px 12px;font-size:0.82rem;" onclick="saveAccountName()">✓</button>
@@ -360,7 +360,7 @@ function renderSettingsPage(container) {
           </div>
           <div class="settings-item">
             <span class="settings-item-label">${t('set.platform')}</span>
-            <span class="settings-item-value">${isElectron() ? 'PC (Escritorio)' : 'Web (PWA)'}</span>
+            <span class="settings-item-value">${ (window.chrome && window.chrome.webview) ? 'App en Windows' : (navigator.userAgent.includes('Android') ? 'App en Android' : 'Web (PWA)') }</span>
           </div>
           <div class="settings-item">
             <span class="settings-item-label">${t('set.storage')}</span>
