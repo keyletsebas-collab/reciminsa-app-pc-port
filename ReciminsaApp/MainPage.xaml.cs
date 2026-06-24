@@ -17,6 +17,7 @@ public partial class MainPage : ContentPage
 
     private async void BlazorWebView_BlazorWebViewInitialized(object sender, Microsoft.AspNetCore.Components.WebView.BlazorWebViewInitializedEventArgs e)
     {
+#if WINDOWS
         e.WebView.CoreWebView2.WebMessageReceived += CoreWebView2_WebMessageReceived;
         e.WebView.CoreWebView2.NavigationStarting += CoreWebView2_NavigationStarting;
         
@@ -30,8 +31,10 @@ public partial class MainPage : ContentPage
         {
             Console.WriteLine("Error limpiando cache: " + ex.Message);
         }
+#endif
     }
 
+#if WINDOWS
     private void CoreWebView2_NavigationStarting(object sender, Microsoft.Web.WebView2.Core.CoreWebView2NavigationStartingEventArgs e)
     {
         // Si intenta navegar a un blob: (por ejemplo al darle click a un PDF mal generado), lo bloqueamos para evitar la pantalla blanca
@@ -81,6 +84,7 @@ public partial class MainPage : ContentPage
             Console.WriteLine("Error descargando archivo: " + ex.Message);
         }
     }
+#endif
 
     protected override void OnAppearing()
     {

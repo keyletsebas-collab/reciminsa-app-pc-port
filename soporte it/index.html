@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no" />
+  <title>Soporte IT - Reciminsaap</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/main.css?v=30" />
+  <link rel="stylesheet" href="../css/app.css?v=30" />
+  <link rel="stylesheet" href="css/soporte.css" />
+</head>
+
+<body>
+  <div class="app-screen" style="display:flex; flex-direction:column; height:100vh; position:relative;">
+    <!-- Topbar -->
+    <header class="topbar">
+      <button class="btn-secondary" onclick="window.history.back()" style="padding: 6px 12px; font-size: 0.9rem;">
+        ← Volver
+      </button>
+      <h2 class="topbar-title" style="flex:1; text-align:center;">Soporte IT</h2>
+      <div style="width: 70px;"></div> <!-- Spacer -->
+    </header>
+
+    <main class="main-content" style="flex:1; overflow-y:auto; padding: 20px;">
+      
+      <!-- Loading State -->
+      <div id="loading-state" style="text-align:center; padding:40px;">
+        <div class="btn-spinner" style="display:inline-block; border-color:#22c55e; border-right-color:transparent; width:30px; height:30px;"></div>
+        <p style="margin-top:10px; color:var(--clr-text-muted);">Verificando credenciales...</p>
+      </div>
+
+      <!-- User View (Submit Ticket) -->
+      <div id="user-view" class="hidden">
+        <div class="card card--elevated">
+          <h3 class="section-title" style="margin-bottom: 20px;">Reportar un Problema</h3>
+          
+          <form id="ticket-form" onsubmit="submitTicket(event)">
+            <div class="form-group">
+              <label class="form-label">Usuario que tiene el problema</label>
+              <!-- It could be a dropdown, but we default to current user if they are normal user. -->
+              <input type="text" id="ticket-user" class="form-input" list="users-list" placeholder="Busca un usuario o escribe su correo..." required />
+              <datalist id="users-list"></datalist>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Módulo donde ocurrió el problema</label>
+              <select id="ticket-module" class="form-input" required>
+                <option value="" disabled selected>Selecciona un módulo...</option>
+                <option value="Historial">Historial</option>
+                <option value="Bitácoras de Recogida">Bitácoras de Recogida</option>
+                <option value="Facturación">Facturación</option>
+                <option value="Códigos de Materiales">Códigos de Materiales</option>
+                <option value="Clientes">Clientes</option>
+                <option value="Ingresos">Ingresos</option>
+                <option value="Egresos">Egresos</option>
+                <option value="Registro de Empresas">Registro de Empresas</option>
+                <option value="Impacto Medioambiental">Impacto medioambiental</option>
+                <option value="Ajustes">Ajustes</option>
+                <option value="Otro">Otro</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Fecha desde cuando aparece el problema</label>
+              <input type="date" id="ticket-date" class="form-input" required />
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Especificaciones del problema</label>
+              <textarea id="ticket-desc" class="form-input" rows="4" placeholder="Describe detalladamente lo que ocurrió..." required></textarea>
+            </div>
+
+            <button type="submit" class="btn-primary" style="width:100%; justify-content:center; padding:12px; margin-top:10px;" id="btn-submit-ticket">
+              <span>Enviar Reclamo</span>
+              <div class="btn-spinner hidden" id="spinner-submit"></div>
+            </button>
+          </form>
+        </div>
+
+        <div class="card card--elevated" style="margin-top:20px;">
+          <h3 class="section-title">Mis Reclamos</h3>
+          <div id="my-tickets-list" style="margin-top:15px; display:flex; flex-direction:column; gap:10px;">
+            <p style="color:var(--clr-text-muted); font-size:0.9rem;">Cargando tus reclamos...</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Admin View (Dashboard) -->
+      <div id="admin-view" class="hidden">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+          <h3 class="section-title" style="margin:0;">Panel de Administración IT</h3>
+          <button class="btn-secondary" onclick="loadAllTickets()">🔄 Refrescar</button>
+        </div>
+        
+        <div id="admin-tickets-list" style="display:grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 15px;">
+          <p style="color:var(--clr-text-muted); font-size:0.9rem;">Cargando reclamos...</p>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Chat Modal -->
+  <div id="chat-modal" class="modal-overlay hidden">
+    <div class="modal-card chat-modal-card">
+      <!-- Header -->
+      <div class="chat-header">
+        <h4 id="chat-title">Chat de Soporte</h4>
+        <button class="btn-secondary" style="padding:4px 10px;" onclick="closeChat()">✕</button>
+      </div>
+      
+      <!-- Ticket Context -->
+      <div id="chat-context" class="chat-context">
+      </div>
+
+      <!-- Messages -->
+      <div id="chat-messages" class="chat-messages">
+        <p style="text-align:center; color:var(--clr-text-muted); font-size:0.8rem; margin:auto;">Iniciando conexión segura...</p>
+      </div>
+
+      <!-- Input -->
+      <form id="chat-form" class="chat-form" onsubmit="sendChatMessage(event)">
+        <input type="text" id="chat-input" class="form-input" placeholder="Escribe un mensaje..." style="flex:1;" required autocomplete="off" />
+        <button type="submit" class="btn-primary" style="padding:8px 15px;" id="btn-send-msg">
+          <span>Enviar</span>
+          <div class="btn-spinner hidden" id="spinner-send"></div>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/supabase-config.js?v=30"></script>
+  <script src="js/soporte.js"></script>
+</body>
+</html>
