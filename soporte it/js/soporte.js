@@ -241,8 +241,9 @@ function renderTicketsList(tickets, container, showUserInfo) {
         <span>📅 Problema desde: ${ticket.issue_date}</span>
         <span>${createdDate}</span>
       </div>
-      <div style="margin-top:12px; border-top:1px solid var(--clr-border); padding-top:10px; text-align:center;">
-        <button class="btn-secondary" style="width:100%; justify-content:center;">💬 ${showUserInfo ? 'Iniciar chat' : 'Ver chat / Responder'}</button>
+      <div style="margin-top:12px; border-top:1px solid var(--clr-border); padding-top:10px; display:flex; gap:10px;">
+        <button class="btn-secondary" style="flex:1; justify-content:center;">💬 ${showUserInfo ? 'Iniciar chat' : 'Ver chat / Responder'}</button>
+        <button style="padding:0 15px; background:rgba(239, 68, 68, 0.1); color:#ef4444; border:1px solid #ef4444; border-radius:var(--r-md); cursor:pointer; font-weight:bold; transition:all 0.2s ease;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.1)'; this.style.color='#ef4444';" onclick="event.stopPropagation(); deleteTicket('${ticket.id}')">🗑️</button>
       </div>
     `;
 
@@ -253,6 +254,23 @@ function renderTicketsList(tickets, container, showUserInfo) {
 // ==========================================
 // CHAT FUNCTIONALITY
 // ==========================================
+
+window.deleteTicket = async function(id) {
+  if(!confirm("¿Estás seguro de que deseas eliminar este ticket de forma permanente? Esta acción no se puede deshacer.")) return;
+  try {
+    const { error } = await supabaseClient.from('support_tickets').delete().eq('id', id);
+    if(error) throw error;
+    // Recargar tickets
+    if (isAdmin) {
+      loadAllTickets();
+    } else {
+      loadMyTickets();
+    }
+  } catch (err) {
+    console.error("Error al borrar ticket:", err);
+    alert("Hubo un error al eliminar el ticket.");
+  }
+};
 
 async function openChat(ticket) {
   currentChatTicketId = ticket.id;
