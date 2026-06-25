@@ -4,6 +4,10 @@ let isAdmin = false;
 let currentChatTicketId = null;
 let chatSubscription = null;
 
+function cleanUserName(name) {
+  if (!name) return '';
+  return name.split(' | ')[0].trim();
+}
 const COLOR_THEMES = [
   { id: 'green', label: 'Verde', primary: '#22c55e', dark: '#16a34a', glow: 'rgba(34, 197, 94, 0.2)' },
   { id: 'blue', label: 'Azul', primary: '#3b82f6', dark: '#2563eb', glow: 'rgba(59, 130, 246, 0.2)' },
@@ -87,7 +91,7 @@ async function loadUsersForDatalist() {
         if(user.email) {
           const option = document.createElement('option');
           option.value = user.email;
-          option.textContent = user.name || user.email;
+          option.textContent = cleanUserName(user.name) || user.email;
           datalist.appendChild(option);
         }
       });
@@ -235,7 +239,7 @@ function renderTicketsList(tickets, container, showUserInfo) {
         <span class="ticket-module-badge">${ticket.module}</span>
         <span class="ticket-status ${statusClass}">${statusText}</span>
       </div>
-      <h4 class="ticket-title">${showUserInfo ? `Reclamo de: ${ticket.user_name}` : 'Mi Reclamo'}</h4>
+      <h4 class="ticket-title">${showUserInfo ? `Reclamo de: ${cleanUserName(ticket.user_name)}` : 'Mi Reclamo'}</h4>
       <p class="ticket-desc-preview">${ticket.description}</p>
       <div class="ticket-footer">
         <span>📅 Problema desde: ${ticket.issue_date}</span>
@@ -280,7 +284,7 @@ async function openChat(ticket) {
   const context = document.getElementById('chat-context');
   const messagesContainer = document.getElementById('chat-messages');
   
-  title.textContent = isAdmin ? `Chat con ${ticket.user_name}` : 'Soporte IT';
+  title.textContent = isAdmin ? `Chat con ${cleanUserName(ticket.user_name)}` : 'Soporte IT';
   context.innerHTML = `<strong>Módulo:</strong> ${ticket.module} <br/> <strong>Problema:</strong> ${ticket.description}`;
   messagesContainer.innerHTML = '<p style="text-align:center; color:var(--clr-text-muted); font-size:0.8rem; margin:auto;">Cargando mensajes...</p>';
   
@@ -403,7 +407,7 @@ function appendMessageToUI(msg) {
   div.id = `msg-${msg.id}`;
   div.className = `chat-bubble ${bubbleClass}`;
   div.innerHTML = `
-    ${!isMe ? `<div style="font-weight:bold; font-size:0.75rem; margin-bottom:2px;">${msg.sender_name}</div>` : ''}
+    ${!isMe ? `<div style="font-weight:bold; font-size:0.75rem; margin-bottom:2px;">${cleanUserName(msg.sender_name)}</div>` : ''}
     ${msg.message}
     <span class="chat-timestamp">${timeStr} ${statusIcon}</span>
   `;
