@@ -212,14 +212,13 @@ function generateInvoicePDF(invoice) {
         jsPDF: { unit: 'mm', format: 'a4', orientation: isBasica ? 'portrait' : 'landscape' }
     };
 
-    // Crear contenedor temporal
+    // Crear contenedor temporal fuera de pantalla
     const container = document.createElement('div');
-    container.style.position = 'fixed';
-    container.style.left = '0';
+    container.style.position = 'absolute';
+    container.style.left = '-9999px';
     container.style.top = '0';
     container.style.width = isBasica ? '800px' : '1000px';
-    container.style.height = '0';
-    container.style.overflow = 'hidden';
+    container.style.background = '#fff';
     container.style.zIndex = '-9999';
     container.style.pointerEvents = 'none';
     document.body.appendChild(container);
