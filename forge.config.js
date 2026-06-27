@@ -4,6 +4,7 @@ const { FuseV1Options, FuseVersion } = require('@electron/fuses');
 module.exports = {
   packagerConfig: {
     asar: true,
+    icon: './ReciminsaApp/Resources/AppIcon/appicon',
   },
   rebuildConfig: {},
   makers: [
@@ -13,16 +14,20 @@ module.exports = {
     },
     {
       name: '@electron-forge/maker-zip',
-      platforms: ['darwin'],
+      platforms: ['darwin', 'linux'],
     },
     {
       name: '@electron-forge/maker-deb',
       config: {},
     },
-    {
-      name: '@electron-forge/maker-rpm',
-      config: {},
-    },
+    ...(Object.keys(process.binding('natives')).includes('child_process') || true ? (() => {
+      try {
+        require('child_process').execSync('which rpmbuild', { stdio: 'ignore' });
+        return [{ name: '@electron-forge/maker-rpm', config: {} }];
+      } catch (e) {
+        return [];
+      }
+    })() : []),
   ],
   plugins: [
     {
